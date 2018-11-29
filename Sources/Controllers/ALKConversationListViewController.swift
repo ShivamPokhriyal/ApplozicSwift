@@ -452,7 +452,7 @@ extension ALKConversationListViewController: ALMQTTConversationDelegate {
 }
 
 extension ALKConversationListViewController: ALKConversationListTableViewDelegate {
-    
+
     public func tapped(_ chat: ALKChatViewModelProtocol, at index: Int) {
         delegate?.conversation(
             chat,
@@ -470,11 +470,11 @@ extension ALKConversationListViewController: ALKConversationListTableViewDelegat
         viewController.viewModel = convViewModel
         self.navigationController?.pushViewController(viewController, animated: false)
     }
-    
+
     public func emptyChatCellTapped() {
         self.compose()
     }
-    
+
     public func scrolledToBottom() {
         viewModel.fetchMoreMessages(dbService: dbService)
     }
