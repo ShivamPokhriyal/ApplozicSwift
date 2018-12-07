@@ -11,7 +11,7 @@ import Applozic
 /**
  A delegate used to notify the receiver of the click events in `ConversationListTableViewController`
  */
-public protocol ALKConversationListTableViewDelegate: class {
+public protocol ALKConversationListTableViewDelegate {
     
     /// Tells the delegate which chat cell is tapped alongwith the position.
     func tapped(_ chat: ALKChatViewModelProtocol, at index: Int)
@@ -35,9 +35,8 @@ public class ALKConversationListTableViewController: UITableViewController, Loca
     public var dbService: ALMessageDBService!
     
     //MARK: - PRIVATE PROPERTIES
-    fileprivate weak var delegate: ALKConversationListTableViewDelegate?
+    fileprivate  var delegate: ALKConversationListTableViewDelegate
     fileprivate var configuration: ALKConfiguration
-    fileprivate var showSearch: Bool
     fileprivate var localizedStringFileName: String
     fileprivate var tapToDismiss: UITapGestureRecognizer!
     fileprivate lazy var dataSource = ConversationListTableViewDataSource(viewModel: self.viewModel, cellConfigurator: { (message, tableCell) in
@@ -64,36 +63,30 @@ public class ALKConversationListTableViewController: UITableViewController, Loca
         - configuration: A configuration to be used by this controller to configure different settings.
         - delegate: A delegate used to receive callbacks when chat cell is tapped.
      */
-    public init(viewModel: ALKConversationListViewModelProtocol, dbService: ALMessageDBService, configuration: ALKConfiguration, delegate: ALKConversationListTableViewDelegate, showSearch: Bool) {
+    public init(viewModel: ALKConversationListViewModelProtocol, dbService: ALMessageDBService, configuration: ALKConfiguration, delegate: ALKConversationListTableViewDelegate) {
         self.viewModel = viewModel
         self.configuration = configuration
-        self.showSearch = showSearch
         self.localizedStringFileName = configuration.localizedStringFileName
         self.dbService = dbService
         self.delegate = delegate
         super.init(nibName: nil, bundle: nil)
+        setupView()
     }
     
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
-    /// This method is used to replace current viewModel with a new one and then refresh the tableView.
-    /// - Parameter viewModel: The new viewModel that needs to be updated in tableView
-    public func replaceViewModel(_ viewModel: ALKConversationListViewModelProtocol) {
-        self.viewModel = viewModel
-        self.dataSource.viewModel = viewModel
-        self.tableView.reloadData()
-    }
-    
     //MARK: - VIEW LIFE CYCLE
     override public func viewDidLoad() {
         super.viewDidLoad()
-        setupView()
         searchBar.delegate = self
         self.tableView.delegate = self
         self.tableView.dataSource = self
         tableView.register(ALKChatCell.self, forCellReuseIdentifier: "cell")
+        
+        let nib = UINib(nibName: "EmptyChatCell", bundle: Bundle.applozic)
+        tableView.register(nib, forCellReuseIdentifier: "EmptyChatCell")
         tableView.estimatedRowHeight = 0
     }
     
@@ -141,12 +134,12 @@ public class ALKConversationListTableViewController: UITableViewController, Loca
             guard let message = searchFilteredChat[indexPath.row] as? ALMessage else {
                 return
             }
-            delegate?.tapped(message, at: indexPath.row)
+            delegate.tapped(message, at: indexPath.row)
         } else {
             guard let message = viewModel.chatFor(indexPath: indexPath) else {
                 return
             }
-            delegate?.tapped(message, at: indexPath.row)
+            delegate.tapped(message, at: indexPath.row)
         }
     }
     
@@ -155,34 +148,22 @@ public class ALKConversationListTableViewController: UITableViewController, Loca
     }
     
     public override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        return showSearch ? 50 : 0
+        return 0
     }
     
     public override func tableView(_ tableView: UITableView, viewForFooterInSection section: Int) -> UIView? {
-        
-        let emptyCellView = ALKEmptyView.instanceFromNib()
-        
-        let noConversationLabelText = localizedString(forKey: "NoConversationsLabelText", withDefaultValue: SystemMessage.ChatList.NoConversationsLabelText, fileName: localizedStringFileName)
-        emptyCellView.conversationLabel.text = noConversationLabelText
-        emptyCellView.startNewConversationButtonIcon.isHidden = configuration.hideEmptyStateStartNewButtonInConversationList
-        
-        if !configuration.hideEmptyStateStartNewButtonInConversationList{
-            if let tap = emptyCellView.gestureRecognizers?.first {
-                emptyCellView.removeGestureRecognizer(tap)
-            }
-            
-            let tap = UITapGestureRecognizer.init(target: self, action: #selector(compose))
-            tap.numberOfTapsRequired = 1
-            
-            emptyCellView.addGestureRecognizer(tap)
+        let view = tableView.dequeueReusableCell(withIdentifier: "EmptyChatCell")?.contentView
+        if let tap = view?.gestureRecognizers?.first {
+            view?.removeGestureRecognizer(tap)
         }
-        
-        
-        return emptyCellView
+        let tap = UITapGestureRecognizer.init(target: self, action: #selector(compose))
+        tap.numberOfTapsRequired = 1
+        view?.addGestureRecognizer(tap)
+        return view
     }
     
     public override func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
-        return viewModel.numberOfRowsInSection(0) == 0 ? 325 : 0
+        return viewModel.numberOfRowsInSection(section: 0) == 0 ? 325 : 0
     }
 
     //MARK: - HANDLE KEYBOARD
@@ -201,7 +182,7 @@ public class ALKConversationListTableViewController: UITableViewController, Loca
     }
 
     @objc func compose() {
-        delegate?.emptyChatCellTapped()
+        delegate.emptyChatCellTapped()
     }
     
     //MARK: - PRIVATE METHODS
@@ -568,7 +549,7 @@ extension ALKConversationListTableViewController {
         let reloadDistance: CGFloat = 40.0 // Added this so that loading starts 40 points before the end
         let distanceFromBottom = scrollView.contentSize.height - contentYoffset - reloadDistance
         if distanceFromBottom < height {
-            delegate?.scrolledToBottom()
+            delegate.scrolledToBottom()
         }
     }
 }

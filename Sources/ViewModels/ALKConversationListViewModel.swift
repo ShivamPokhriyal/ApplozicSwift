@@ -192,7 +192,7 @@ final public class ALKConversationListViewModel: NSObject, ALKConversationListVi
         }
     }
 
-    public func fetchMoreMessages(dbService: ALMessageDBService) {
+    func fetchMoreMessages(dbService: ALMessageDBService) {
         guard !ALUserDefaultsHandler.getFlagForAllConversationFetched() else { return }
         delegate?.startedLoading()
         dbService.fetchConversationfromServer(completion: {

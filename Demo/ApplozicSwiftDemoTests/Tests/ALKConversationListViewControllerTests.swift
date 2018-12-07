@@ -82,15 +82,15 @@ class ALKConversationListViewControllerTests: XCTestCase {
             return
         }
         tableView.delegate?.tableView?(tableView, didSelectRowAt: firstIndex)
-        
+
         wait(for: [selectItemExpectation], timeout: 2)
     }
-    
+
     func testMessageSentByLoggedInUser_WhenTypeOutBox() {
         mockMessage.type = "5" // Message type OUTBOX
         XCTAssertTrue(conversationListVC.isMessageSentByLoggedInUser(alMessage: mockMessage))
     }
-    
+
     func testMessageSentByLoggedInUser_WhenTypeInBox() {
         mockMessage.type = "4" // Message type INBOX
         XCTAssertFalse(conversationListVC.isMessageSentByLoggedInUser(alMessage: mockMessage))

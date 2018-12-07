@@ -32,22 +32,22 @@ class ConversationListTableViewControllerTests: XCTestCase {
     }()
 
     var conversationVM: ALKConversationViewModel!
-    
+
     override func setUp() {
         super.setUp()
         conversationVM = ALKConversationViewModel(contactId: nil, channelKey: nil, localizedStringFileName: ALKConfiguration().localizedStringFileName)
-        
+
     }
-    
+
     func testMuteConversationCalledFromDelegate() {
         let conversationListTableVCMock = ConversationListTableVCMock(viewModel: ALKConversationListViewModel(), dbService: ALMessageDBService(), configuration: ALKConfiguration(), delegate: ConversationListTableViewDelegateMock(), showSearch: false)
-        
+
         let muteConversationVC = MuteConversationViewController(delegate: conversationListTableVCMock.self, conversation: mockMessage, atIndexPath: IndexPath(row: 0, section: 0), configuration: ALKConfiguration())
-        
+
         XCTAssertFalse(conversationListTableVCMock.isMuteCalled)
-        
+
         muteConversationVC.tappedConfirm()
-        
+
         XCTAssertTrue(conversationListTableVCMock.isMuteCalled)
     }
 

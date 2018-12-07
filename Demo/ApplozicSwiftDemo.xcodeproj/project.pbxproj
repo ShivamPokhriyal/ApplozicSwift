@@ -264,6 +264,7 @@
 				8BDDEA6E21DA09BE005B22E3 /* ALKConversationListViewControllerMock.swift */,
 				1AE8248721BA633D009C70FE /* ConversationListTableViewDelegateMock.swift */,
 				1A933D7D21CA2E81004C5191 /* ConversationListTableVCMock.swift */,
+
 			);
 			path = Mocks;
 			sourceTree = "<group>";
