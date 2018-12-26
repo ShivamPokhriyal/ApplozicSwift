@@ -1,6 +1,6 @@
 //
 //  ALKConversationViewModel.swift
-//  
+//
 //
 //  Created by Mukesh Thawani on 04/05/17.
 //  Copyright © 2017 Applozic. All rights reserved.
@@ -21,8 +21,79 @@ public protocol ALKConversationViewModelDelegate: class {
     func updateTyingStatus(status: Bool, userId: String)
 }
 
-open class ALKConversationViewModel: NSObject, Localizable {
-    
+
+/// The `ALKConversationViewModelProtocol` protocol defines the common interface through which
+/// an object provides data to `ALKConversationTableViewController`
+///
+/// A concrete class that conforms to this protocol is provided in the SDK. See `ALKConversationViewModel`.
+public protocol ALKConversationViewModelProtocol {
+
+    /// This method returns the number of sections in the tableView.
+    ///
+    /// - Returns: The number of sections in the tableView
+    func numberOfSections() -> Int
+
+
+    /// This method is returns the number of rows in a particular tableview section.
+    ///
+    /// - Parameter section: Section of the tableView.
+    /// - Returns: The number of rows in `section`
+    func numberOfRowsInSection(_ section: Int) -> Int
+
+
+    /// This method returns the message object for the given indexpath of the tableview.
+    ///
+    /// - Parameter indexPath: IndexPath of the current tableView cell.
+    /// - Returns: An object that conforms to `ALKMessageViewModel` for the required indexPath.
+    func messageFor(indexPath: IndexPath) -> ALKMessageViewModel?
+
+
+    /// This method returns rich message template for given message object
+    ///
+    /// - Parameter message: Message object that conforms to `ALKMessageViewModel`
+    /// - Returns: Returns rich message template
+    func genericTemplateFor(message: ALKMessageViewModel) -> Any?
+
+
+    /// This method returns height for given indexPath of tableView
+    ///
+    /// - Parameters:
+    ///   - indexPath: IndexPath of current tableview cell
+    ///   - cellFrame: Frame of current tableView cell
+    /// - Returns: Returns height for given cell
+    func heightFor(indexPath: IndexPath, cellFrame: CGRect) -> CGFloat
+
+
+    /// This method returns the quickReply dictionary for given message object.
+    ///
+    /// - Parameters:
+    ///   - message: Message object that conforms to `ALKMessageViewModel`
+    ///   - row: Current row of tableView.
+    /// - Returns: Returns quick reply dictionary for current message
+    func quickReplyDictionary(message: ALKMessageViewModel?,indexRow row: Int) -> Dictionary<String,Any>?
+
+
+    /// This method returns the size of quick reply item
+    ///
+    /// - Parameters:
+    ///   - row: Current row of tableView
+    ///   - withData: Quick reply dictionary
+    /// - Returns: Returns size of quick reply item
+    func sizeForQuickReplyItemAt(row: Int, withData: Dictionary<String, Any>) -> CGSize
+
+    /// This method returns indexPath of reply message.
+    ///
+    /// - NOTE:  It will return nil if no message is found.
+    /// - Parameter message: Reply message object.
+    /// - Returns: Returns IndexPath for message.
+    func indexpathForReplyMessage(_ message: ALKMessageViewModel) -> IndexPath?
+
+    /// This method is called when view is scrolled to load more messages
+    func loadMoreMessages()
+}
+
+open class ALKConversationViewModel: ALKConversationViewModelProtocol, Localizable {
+
     fileprivate var localizedStringFileName: String!
 
     //MARK: - Inputs
@@ -104,14 +175,14 @@ open class ALKConversationViewModel: NSObject, Localizable {
             loadMessages()
         }
     }
-        
+
     public func addToWrapper(message: ALMessage) {
-        
+
         self.alMessageWrapper.addALMessage(toMessageArray: message)
         self.alMessages.append(message)
         self.messageModels.append(message.messageModel)
     }
-    
+
     func clearViewModel() {
         self.isFirstTime = true
         self.messageModels.removeAll()
@@ -165,27 +236,27 @@ open class ALKConversationViewModel: NSObject, Localizable {
         return messageModels.count
     }
 
-    open func numberOfRows(section: Int) -> Int {
+    open func numberOfRowsInSection(_ section: Int) -> Int {
         return 1
-        
+
     }
 
-    open func messageForRow(indexPath: IndexPath) -> ALKMessageViewModel? {
+    open func messageFor(indexPath: IndexPath) -> ALKMessageViewModel? {
         guard indexPath.section < messageModels.count && indexPath.section >= 0 else { return nil }
         return messageModels[indexPath.section]
     }
-    
-    open func quickReplyDictionary(message: ALKMessageViewModel?,indexRow row: Int) -> Dictionary<String,Any>? {
-        
+
+    public func quickReplyDictionary(message: ALKMessageViewModel?,indexRow row: Int) -> Dictionary<String,Any>? {
+
         guard let metadata = message?.metadata else {
             return Dictionary<String,Any>()
         }
-        
+
         let payload = metadata["payload"] as? String
-        
+
         let data = payload?.data
         var jsonArray : [Dictionary<String,Any>]?
-        
+
         do {
             jsonArray = (try JSONSerialization.jsonObject(with: data!, options : .allowFragments) as? [Dictionary<String,Any>])
             return   jsonArray?[row]
@@ -194,9 +265,9 @@ open class ALKConversationViewModel: NSObject, Localizable {
         }
         return Dictionary<String,Any>()
     }
-    
-    open func getSizeForItemAt(row: Int,withData: Dictionary<String,Any>) -> CGSize {
-        
+
+    open func sizeForQuickReplyItemAt(row: Int, withData: Dictionary<String,Any>) -> CGSize {
+
         let size = (withData["title"] as? String)?.size(withAttributes: [NSAttributedStringKey.font: Font.normal(size: 14.0).font()])
         let newSize = CGSize(width: (size?.width)!+46.0, height: 50.0)
         return newSize
@@ -207,7 +278,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
         return messageModel
     }
 
-    open func heightForRow(indexPath: IndexPath, cellFrame: CGRect) -> CGFloat {
+    public func heightFor(indexPath: IndexPath, cellFrame: CGRect) -> CGFloat {
         let messageModel = messageModels[indexPath.section]
         switch messageModel.messageType {
         case .text, .html:
@@ -300,12 +371,12 @@ open class ALKConversationViewModel: NSObject, Localizable {
         }
     }
 
-    open func nextPage() {
+    open func loadMoreMessages() {
         guard !isOpenGroup else {
             loadOpenGroupMessages()
             return
         }
-        var id = self.channelKey?.stringValue ?? self.contactId 
+        var id = self.channelKey?.stringValue ?? self.contactId
         if let convId = conversationId {
             id = convId.stringValue
         }
@@ -583,7 +654,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
 
     open func uploadVideo(view: UIView, indexPath: IndexPath) {
         let alMessage = alMessages[indexPath.section]
-        
+
         let clientService = ALMessageClientService()
         let messageService = ALMessageDBService()
         let alHandler = ALDBHandler.sharedInstance()
@@ -661,7 +732,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
     }
 
     open func updateMessageModelAt(indexPath: IndexPath, data: Data) {
-        var message = messageForRow(indexPath: indexPath)
+        var message = messageFor(indexPath: indexPath)
         message?.voiceData = data
         messageModels[indexPath.section] = message as! ALKMessageModel
         delegate?.updateMessageAt(indexPath: indexPath)
@@ -887,13 +958,27 @@ open class ALKConversationViewModel: NSObject, Localizable {
         selectedMessageForReply = nil
     }
 
-    open func getIndexpathFor(message: ALKMessageModel) -> IndexPath? {
-        guard let index = messageModels.index(of: message)
-            else {return nil}
+    public func indexpathForReplyMessage(_ message: ALKMessageViewModel) -> IndexPath? {
+        // Check for reply message
+        guard
+            let metadata = message.metadata,
+            let replyMessageKey = metadata[AL_MESSAGE_REPLY_KEY] as? String
+            else {
+                return nil
+        }
+
+        // Get indexPath for reply message.
+        guard
+            let message = ALMessageService().getALMessage(byKey: replyMessageKey)?.messageModel,
+            let index = messageModels.index(of: message)
+            else {
+            return nil
+        }
+
         return IndexPath(row: 0, section: index)
     }
 
-    open func genericTemplateFor(message: ALKMessageViewModel) -> Any? {
+    public func genericTemplateFor(message: ALKMessageViewModel) -> Any? {
 
         guard richMessages[message.identifier] == nil else {
             return richMessages[message.identifier]
@@ -932,9 +1017,9 @@ open class ALKConversationViewModel: NSObject, Localizable {
             self.alMessageWrapper.addObject(toMessageArray: messages)
             let models = self.alMessages.map { $0.messageModel }
             self.messageModels = models
-            
+
             let showLoadEarlierOption: Bool = self.messageModels.count >= 50
-        
+
             let id = self.contactId ?? self.channelKey?.stringValue
             if let convId = self.conversationId {
                 ALUserDefaultsHandler.setShowLoadEarlierOption(showLoadEarlierOption, forContactId: convId.stringValue)
@@ -1214,7 +1299,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
             }
         })
     }
-    
+
     private func updateMessageStatus(filteredList: [ALMessage], status: Int32) {
         if filteredList.count > 0 {
             let message = filteredList.first
@@ -1224,7 +1309,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
             delegate?.messageUpdated()
         }
     }
-    
+
     private func deleteFile(filePath:URL) {
         guard FileManager.default.fileExists(atPath: filePath.path) else {
             return

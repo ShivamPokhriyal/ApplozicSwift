@@ -8,7 +8,7 @@
 import Foundation
 import Applozic
 
-open class ALKFriendGenericCardCell: ALKChatBaseCell<ALKMessageViewModel> {
+public class ALKFriendGenericCardCell: ALKChatBaseCell<ALKMessageViewModel> {
     
     open var collectionView: ALKGenericCardCollectionView!
     

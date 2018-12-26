@@ -10,14 +10,10 @@ import UIKit
 import Kingfisher
 import Applozic
 
-protocol ALKLocationCellDelegate: class {
-    func displayLocation(location:ALKLocationPreviewViewModel)
-}
-
 class ALKLocationCell: ALKChatBaseCell<ALKMessageViewModel>,
                         ALKReplyMenuItemProtocol {
-    
-    weak var delegate:ALKLocationCellDelegate?
+
+    public var displayLocation: ((ALKLocationPreviewViewModel) -> ())?
 
     // MARK: - Declare Variables or Types
     // MARK: Environment in chat
@@ -141,11 +137,6 @@ class ALKLocationCell: ALKChatBaseCell<ALKMessageViewModel>,
         return heigh + 26.0
     }
 
-    // MARK: - Method of class
-    func setDelegate(locDelegate:ALKLocationCellDelegate) {
-        delegate = locDelegate
-    }
-
     @objc func handleTap(withTapGesture gesture: UITapGestureRecognizer) {
         if let geocode = viewModel?.geocode ,gesture.state == .ended {
             tempLocation = geocode
@@ -154,9 +145,12 @@ class ALKLocationCell: ALKChatBaseCell<ALKMessageViewModel>,
     }
 
     func openMap(withLocation geocode: Geocode, completion: ((_ isSuccess: Bool) -> Swift.Void)? = nil) {
-        if let locDelegate = delegate , locationPreviewViewModel().isReady{
-            locDelegate.displayLocation(location: locationPreviewViewModel())
+        guard locationPreviewViewModel().isReady,
+            let displayLocation = displayLocation
+        else {
+            return
         }
+        displayLocation(locationPreviewViewModel())
     }
 
     // MARK: - ALKPreviewLocationViewControllerDelegate

@@ -9,7 +9,7 @@
 import Foundation
 import UIKit
 
-open class ALKBaseCell<T>: UITableViewCell {
+public class ALKBaseCell<T>: UITableViewCell {
     
     var viewModel: T?
     

@@ -8,7 +8,7 @@
 
 import UIKit
 
-open class ALKChatBaseCell<T>: ALKBaseCell<T>, Localizable {
+public class ALKChatBaseCell<T>: ALKBaseCell<T>, Localizable {
     
     var localizedStringFileName: String!
     
@@ -26,7 +26,7 @@ open class ALKChatBaseCell<T>: ALKBaseCell<T>, Localizable {
 
     /// Actions available on menu where callbacks
     /// needs to be send are defined here.
-    enum MenuActionType {
+    public enum MenuActionType {
         case reply
     }
 

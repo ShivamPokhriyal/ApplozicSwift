@@ -12,7 +12,7 @@ import Kingfisher
 import Applozic
 
 // MARK: - ALKFriendMessageCell
-open class ALKFriendMessageCell: ALKMessageCell {
+public class ALKFriendMessageCell: ALKMessageCell {
     
     private var avatarImageView: UIImageView = {
         let imv = UIImageView()
@@ -258,7 +258,7 @@ open class ALKFriendMessageCell: ALKMessageCell {
 
 
 // MARK: - ALKMyMessageCell
-open class ALKMyMessageCell: ALKMessageCell {
+public class ALKMyMessageCell: ALKMessageCell {
 
     fileprivate var stateView: UIImageView = {
         let sv = UIImageView()
@@ -477,7 +477,7 @@ open class ALKMyMessageCell: ALKMessageCell {
     }
 }
 
-open class ALKMessageCell: ALKChatBaseCell<ALKMessageViewModel>, ALKCopyMenuItemProtocol, ALKReplyMenuItemProtocol {
+public class ALKMessageCell: ALKChatBaseCell<ALKMessageViewModel>, ALKCopyMenuItemProtocol, ALKReplyMenuItemProtocol {
     fileprivate lazy var messageView: ALHyperLabel = {
         let label = ALHyperLabel.init(frame: .zero)
         label.isUserInteractionEnabled = true

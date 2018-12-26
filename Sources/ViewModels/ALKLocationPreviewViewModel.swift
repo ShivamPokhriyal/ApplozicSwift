@@ -9,7 +9,7 @@
 import Foundation
 import CoreLocation
 
-struct ALKLocationPreviewViewModel: Localizable {
+public struct ALKLocationPreviewViewModel: Localizable {
 
     fileprivate var localizedStringFileName: String!
     

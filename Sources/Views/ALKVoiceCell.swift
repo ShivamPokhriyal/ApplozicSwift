@@ -14,10 +14,6 @@ import Kingfisher
 import AVFoundation
 import Applozic
 
-protocol ALKVoiceCellProtocol: class {
-    func playAudioPress(identifier: String)
-}
-
 public enum ALKVoiceCellState {
     case playing
     case stop
@@ -26,6 +22,8 @@ public enum ALKVoiceCellState {
 
 class ALKVoiceCell:ALKChatBaseCell<ALKMessageViewModel>,
                     ALKReplyMenuItemProtocol {
+
+    public var buttonAction: ((String)->())?
     
     var soundPlayerView: UIView = {
         let mv = UIView()
@@ -164,16 +162,15 @@ class ALKVoiceCell:ALKChatBaseCell<ALKMessageViewModel>,
         }
         timeLabel.text   = viewModel.time
     }
-    
-    weak var voiceDelegate: ALKVoiceCellProtocol?
-    
-    func setCellDelegate(delegate:ALKVoiceCellProtocol) {
-        voiceDelegate = delegate
-    }
-    
+
     @objc func actionTapped() {
-        guard let identifier = viewModel?.identifier else {return}
-        voiceDelegate?.playAudioPress(identifier: identifier)
+        guard
+            let identifier = viewModel?.identifier,
+            let buttonAction = buttonAction
+        else {
+            return
+        }
+        buttonAction(identifier)
     }
     
     override func setupStyle() {

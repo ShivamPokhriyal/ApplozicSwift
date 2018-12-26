@@ -7,7 +7,7 @@
 
 import Foundation
 
-open class ALKFriendMessageQuickReplyCell: ALKFriendMessageCell {
+public class ALKFriendMessageQuickReplyCell: ALKFriendMessageCell {
     
     open var collectionView: ALKIndexedCollectionView!
     
