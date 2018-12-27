@@ -59,8 +59,6 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
     fileprivate var mqttRetryCount = 0
     fileprivate var maxMqttRetryCount = 3
 
-    fileprivate let audioPlayer = ALKAudioPlayer()
-
     fileprivate let moreBar: ALKMoreBar = ALKMoreBar(frame: .zero)
     fileprivate lazy var typingNoticeView = TypingNotice(localizedStringFileName : configuration.localizedStringFileName)
     fileprivate var alMqttConversationService: ALMQTTConversationService!
@@ -85,9 +83,9 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
         }
     }
 
-    fileprivate lazy var conversationTableView = ALKConversationTableViewController(viewModel: self.viewModel, configuration: self.configuration, delegate: self)
+    fileprivate lazy var conversationTableViewController = ALKConversationTableViewController(viewModel: self.viewModel, configuration: self.configuration, delegate: self)
 
-    lazy var tableView: UITableView! = self.conversationTableView.tableView
+    lazy var tableView: UITableView! = self.conversationTableViewController.tableView
 
     fileprivate let titleButton : UIButton = {
         let titleButton = UIButton(frame: CGRect(x: 0, y: 0, width: 200, height: 200))
@@ -344,7 +342,6 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
 
     override open func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        stopAudioPlayer()
         chatBar.stopRecording()
         if individualLaunch {
             if let _ = alMqttConversationService {
@@ -425,15 +422,10 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
             allViews.append(templateView)
         }
         view.addViewsForAutolayout(views: allViews)
-        add(conversationTableView)
-        conversationTableView.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        conversationTableView.view.translatesAutoresizingMaskIntoConstraints = false
-        if let checkView = conversationTableView.view {
-        checkView.topAnchor.constraint(equalTo: contextTitleView.bottomAnchor).isActive = true
-        checkView.leadingAnchor.constraint(equalTo: view.leadingAnchor).isActive = true
-        checkView.trailingAnchor.constraint(equalTo: view.trailingAnchor).isActive = true
-        checkView.bottomAnchor.constraint(equalTo: (templateView != nil) ? templateView!.topAnchor:typingNoticeView.topAnchor).isActive = true
-        }
+        add(conversationTableViewController)
+        view.bringSubview(toFront: unreadScrollButton)
+        conversationTableViewController.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        conversationTableViewController.view.translatesAutoresizingMaskIntoConstraints = false
         backgroundView.topAnchor.constraint(equalTo: contextTitleView.bottomAnchor).isActive = true
         backgroundView.leadingAnchor.constraint(equalTo: view.leadingAnchor).isActive = true
         backgroundView.trailingAnchor.constraint(equalTo: view.trailingAnchor).isActive = true
@@ -448,12 +440,6 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
         templateView?.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 5.0).isActive = true
         templateView?.widthAnchor.constraint(equalTo: self.view.widthAnchor, constant: -10.0).isActive = true
         templateView?.heightAnchor.constraint(equalToConstant: 45).isActive = true
-
-//        tableView.topAnchor.constraint(equalTo: contextTitleView.bottomAnchor).isActive = true
-//        tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor).isActive = true
-//        tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor).isActive = true
-//        tableView.bottomAnchor.constraint(equalTo: (templateView != nil) ? templateView!.topAnchor:typingNoticeView.topAnchor).isActive = true
-
 
         typingNoticeViewHeighConstaint = typingNoticeView.heightAnchor.constraint(equalToConstant: 0)
         typingNoticeViewHeighConstaint?.isActive = true
@@ -487,6 +473,14 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
 
         leftMoreBarConstraint = moreBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: 56)
         leftMoreBarConstraint?.isActive = true
+
+        guard let conversationTableView = conversationTableViewController.view else {
+            return
+        }
+        conversationTableView.topAnchor.constraint(equalTo: contextTitleView.bottomAnchor).isActive = true
+        conversationTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor).isActive = true
+        conversationTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor).isActive = true
+        conversationTableView.bottomAnchor.constraint(equalTo: (templateView != nil) ? templateView!.topAnchor:typingNoticeView.topAnchor).isActive = true
     }
 
     private func setupNavigation() {
@@ -499,13 +493,13 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
     }
 
     private func prepareTable() {
-        conversationTableView.viewDidScroll = {
+        conversationTableViewController.viewDidScroll = {
             if self.tableView.isCellVisible(section: self.viewModel.messageModels.count-2, row: 0) {
                 self.unreadScrollButton.isHidden = true
             }
         }
 
-        conversationTableView.viewWillBeginDecelerating = {
+        conversationTableViewController.viewWillBeginDecelerating = {
             UIMenuController.shared.setMenuVisible(false, animated: true)
             self.hideMoreBar()
         }
@@ -674,8 +668,8 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
     /// Call this method after proper viewModel initialization
     public func refreshViewController() {
         viewModel.clearViewModel()
-        tableView.reloadData()
         viewModel.prepareController()
+        conversationTableViewController.replaceViewModel(viewModel)
     }
 
     // Called from the parent VC
@@ -1019,74 +1013,6 @@ extension ALKConversationViewController: ALKShareLocationViewControllerDelegate 
     }
 }
 
-extension ALKConversationViewController: ALKAudioPlayerProtocol {
-
-    func reloadVoiceCell() {
-        for cell in tableView.visibleCells {
-            guard let indexPath = tableView.indexPath(for: cell) else {return}
-            if let message = viewModel.messageFor(indexPath: indexPath) {
-                if message.messageType == .voice && message.identifier == audioPlayer.getCurrentAudioTrack(){
-                    print("voice cell reloaded with row: ", indexPath.row, indexPath.section)
-                    tableView.reloadSections([indexPath.section], with: .none)
-                    break
-                }
-            }
-        }
-    }
-
-    func audioPlaying(maxDuratation: CGFloat, atSec: CGFloat,lastPlayTrack:String) {
-
-        DispatchQueue.main.async { [weak self] in
-            guard let weakSelf = self else { return }
-            guard var currentVoice =  weakSelf.viewModel.messageForRow(identifier: lastPlayTrack) else {return}
-            if currentVoice.messageType == .voice {
-
-                if currentVoice.identifier == lastPlayTrack {
-                    if atSec <= 0 {
-                        currentVoice.voiceCurrentState = .stop
-                        currentVoice.voiceCurrentDuration = 0
-                    } else {
-                        currentVoice.voiceCurrentState = .playing
-                        currentVoice.voiceCurrentDuration = atSec
-                    }
-                }
-                print("audio playing id: ", currentVoice.identifier)
-                weakSelf.reloadVoiceCell()
-            }
-        }
-    }
-
-    func audioStop(maxDuratation: CGFloat,lastPlayTrack:String) {
-
-        DispatchQueue.main.async { [weak self] in
-            guard let weakSelf = self else { return }
-
-            guard var currentVoice =  weakSelf.viewModel.messageForRow(identifier: lastPlayTrack) else {return}
-            if currentVoice.messageType == .voice {
-                if currentVoice.identifier == lastPlayTrack {
-                    currentVoice.voiceCurrentState = .stop
-                    currentVoice.voiceCurrentDuration = 0.0
-                }
-            }
-            weakSelf.reloadVoiceCell()
-        }
-    }
-
-    func stopAudioPlayer(){
-        DispatchQueue.main.async { [weak self] in
-            guard let weakSelf = self else { return }
-            if var lastMessage = weakSelf.viewModel.messageForRow(identifier: weakSelf.audioPlayer.getCurrentAudioTrack()) {
-
-                if lastMessage.voiceCurrentState == .playing {
-                    weakSelf.audioPlayer.pauseAudio()
-                    lastMessage.voiceCurrentState = .pause
-                    weakSelf.reloadVoiceCell()
-                }
-            }
-        }
-    }
-}
-
 extension ALKConversationViewController: ALMQTTConversationDelegate {
 
     public func mqttDidConnected() {
@@ -1297,79 +1223,7 @@ extension ALKConversationViewController: ALKConversationTableViewDelegate {
         NotificationCenter.default.post(name: Notification.Name(rawValue: "GenericRichCardButtonSelected"), object: infoDict)
     }
 
-    public func playAudioPress(identifier: String) {
-        DispatchQueue.main.async { [weak self] in
-            NSLog("play audio pressed")
-            guard let weakSelf = self else { return }
-
-            //if we have previously play audio, stop it first
-            if !weakSelf.audioPlayer.getCurrentAudioTrack().isEmpty && weakSelf.audioPlayer.getCurrentAudioTrack() != identifier {
-                //pause
-                NSLog("already playing, change it to pause")
-                guard var lastMessage =  weakSelf.viewModel.messageForRow(identifier: weakSelf.audioPlayer.getCurrentAudioTrack()) else {return}
-
-                if Int(lastMessage.voiceCurrentDuration) > 0 {
-                    lastMessage.voiceCurrentState = .pause
-                    lastMessage.voiceCurrentDuration = weakSelf.audioPlayer.secLeft
-                } else {
-                    let lastMessageCopy = lastMessage
-                    lastMessage.voiceCurrentDuration = lastMessageCopy.voiceTotalDuration
-                    lastMessage.voiceCurrentState = .stop
-                }
-                weakSelf.audioPlayer.pauseAudio()
-            }
-            NSLog("now it will be played")
-            //now play
-            guard var currentVoice =  weakSelf.viewModel.messageForRow(identifier: identifier) else {return}
-            if currentVoice.voiceCurrentState == .playing {
-                currentVoice.voiceCurrentState = .pause
-                currentVoice.voiceCurrentDuration = weakSelf.audioPlayer.secLeft
-                weakSelf.audioPlayer.pauseAudio()
-                weakSelf.tableView.reloadData()
-            }
-            else {
-                NSLog("reset time to total duration")
-                //reset time to total duration
-                if currentVoice.voiceCurrentState  == .stop || currentVoice.voiceCurrentDuration < 1 {
-                    let currentVoiceCopy = currentVoice
-                    currentVoice.voiceCurrentDuration = currentVoiceCopy.voiceTotalDuration
-                }
-
-                if let data = currentVoice.voiceData {
-                    let voice = data as NSData
-                    //start playing
-                    NSLog("Start playing")
-                    weakSelf.audioPlayer.setAudioFile(data: voice, delegate: weakSelf, playFrom: currentVoice.voiceCurrentDuration,lastPlayTrack:currentVoice.identifier)
-                    currentVoice.voiceCurrentState = .playing
-                    weakSelf.tableView.reloadData()
-                }
-            }
-        }
-    }
-
-    public func displayLocation(location: ALKLocationPreviewViewModel) {
-        let latLonString = String(format: "%f,%f", location.coordinate.latitude, location.coordinate.longitude)
-        let locationString = String(format: "https://maps.google.com/maps?q=loc:%@", latLonString)
-        guard let locationUrl = URL(string: locationString) else { return }
-        UIApplication.shared.openURL(locationUrl)
-    }
-
     public func quickReplyCellTapped(tag: Int, title: String) {
         viewModel.send(message: title, isOpenGroup: false)
     }
-}
-
-extension UIViewController {
-func add(_ child: UIViewController) {
-    addChildViewController(child)
-    view.addSubview(child.view)
-    child.didMove(toParentViewController: self)
-}
-
-func remove() {
-    guard parent != nil else { return }
-    willMove(toParentViewController: nil)
-    view.removeFromSuperview()
-    removeFromParentViewController()
-}
 }

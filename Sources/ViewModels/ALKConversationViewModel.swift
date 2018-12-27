@@ -48,11 +48,11 @@ public protocol ALKConversationViewModelProtocol {
     func messageFor(indexPath: IndexPath) -> ALKMessageViewModel?
 
 
-    /// This method returns rich message template for given message object
+    /// This method returns the message object for given identifier.
     ///
-    /// - Parameter message: Message object that conforms to `ALKMessageViewModel`
-    /// - Returns: Returns rich message template
-    func genericTemplateFor(message: ALKMessageViewModel) -> Any?
+    /// - Parameter identifier: Identifier of message to be searched.
+    /// - Returns: Returns message which matches the identifier.
+    func messageFor(identifier: String) -> ALKMessageViewModel?
 
 
     /// This method returns height for given indexPath of tableView
@@ -64,8 +64,20 @@ public protocol ALKConversationViewModelProtocol {
     func heightFor(indexPath: IndexPath, cellFrame: CGRect) -> CGFloat
 
 
+    /// This method returns rich message template for given message object
+    ///
+    /// - NOTE:
+    /// Return nil if message doesn't have any rich message template.
+    ///
+    /// Otherwise return ALKGenericCardTemplate or [ALKGenericListTemplate].
+    /// - Parameter message: Message object that conforms to `ALKMessageViewModel`
+    /// - Returns: Returns rich message template
+    func genericTemplateFor(message: ALKMessageViewModel) -> Any?
+
+
     /// This method returns the quickReply dictionary for given message object.
     ///
+    /// - NOTE: Return nil if the message doesn't have anything for quick reply.
     /// - Parameters:
     ///   - message: Message object that conforms to `ALKMessageViewModel`
     ///   - row: Current row of tableView.
@@ -273,7 +285,7 @@ open class ALKConversationViewModel: ALKConversationViewModelProtocol, Localizab
         return newSize
     }
 
-    open func messageForRow(identifier: String) -> ALKMessageViewModel? {
+    open func messageFor(identifier: String) -> ALKMessageViewModel? {
         guard let messageModel = messageModels.filter({$0.identifier == identifier}).first else {return nil}
         return messageModel
     }

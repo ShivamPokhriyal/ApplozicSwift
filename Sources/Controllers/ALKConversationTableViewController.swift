@@ -76,18 +76,6 @@ public protocol ALKConversationTableViewDelegate: class {
     func genericCardButtonTapped(tag: Int, title: String, card: ALKGenericCard, template: ALKGenericCardTemplate)
 
 
-    /// Tells the delegate that audio play button is pressed.
-    ///
-    /// - Parameter identifier: Identifier of audio cell.
-    func playAudioPress(identifier: String)
-
-
-    /// Tells the delegate to display location
-    ///
-    /// - Parameter location: location to be displayed
-    func displayLocation(location: ALKLocationPreviewViewModel)
-
-
     /// Tells the delegate that quick reply cell is selected.
     ///
     /// - Parameters:
@@ -109,6 +97,9 @@ public class ALKConversationTableViewController: UITableViewController {
     var viewDidScroll: (() -> ())?
     var viewWillBeginDecelerating: (() -> ())?
 
+    //Private variables
+    fileprivate let audioPlayer = ALKAudioPlayer()
+
     //MARK: - Initializers
     init(viewModel: ALKConversationViewModelProtocol, configuration: ALKConfiguration, delegate: ALKConversationTableViewDelegate) {
         self.viewModel = viewModel
@@ -122,14 +113,28 @@ public class ALKConversationTableViewController: UITableViewController {
         fatalError("init(coder:) has not been implemented")
     }
 
-    public override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        contentOffsetDictionary = Dictionary<NSObject,AnyObject>()
-    }
-
     public override func viewDidLoad() {
         super.viewDidLoad()
         prepareTableView()
+    }
+
+    public override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        self.tableView.backgroundColor = UIColor.clear
+        contentOffsetDictionary = Dictionary<NSObject,AnyObject>()
+    }
+
+    public override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        stopAudioPlayer()
+    }
+
+    // MARK: - Public Methods
+    /// This method is used to replace current viewModel with a new one and then refresh the tableView.
+    /// - Parameter viewModel: The new viewModel that needs to be updated in tableView
+    public func replaceViewModel(_ viewModel: ALKConversationViewModelProtocol) {
+        self.viewModel = viewModel
+        self.tableView.reloadData()
     }
 
     //MARK: - UITableViewDataSource methods
@@ -235,7 +240,7 @@ public class ALKConversationTableViewController: UITableViewController {
                 let cell: ALKMyVoiceCell = tableView.dequeueReusableCell(forIndexPath: indexPath)
                 self.configureCell(cell, with: message, at: indexPath)
                 cell.buttonAction = {[weak self] identifier in
-                    self?.delegate?.playAudioPress(identifier: identifier)
+                    self?.playAudioPress(identifier: identifier)
                 }
                 cell.downloadTapped = {[weak self] value in
                     self?.delegate?.attachmentViewDidTapDownload(view: cell, indexPath: indexPath)
@@ -248,7 +253,7 @@ public class ALKConversationTableViewController: UITableViewController {
                     self?.delegate?.attachmentViewDidTapDownload(view: cell, indexPath: indexPath)
                 }
                 cell.buttonAction = {[weak self] identifier in
-                    self?.delegate?.playAudioPress(identifier: identifier)
+                    self?.playAudioPress(identifier: identifier)
                 }
                 return cell
             }
@@ -257,14 +262,14 @@ public class ALKConversationTableViewController: UITableViewController {
                 let cell: ALKMyLocationCell = tableView.dequeueReusableCell(forIndexPath: indexPath)
                 self.configureCell(cell, with: message, at: indexPath)
                 cell.displayLocation = {[weak self] location in
-                    self?.delegate?.displayLocation(location: location)
+                    self?.displayLocation(location: location)
                 }
                 return cell
             } else {
                 let cell: ALKFriendLocationCell = tableView.dequeueReusableCell(forIndexPath: indexPath)
                 self.configureCell(cell, with: message, at: indexPath)
                 cell.displayLocation = {[weak self] location in
-                    self?.delegate?.displayLocation(location: location)
+                    self?.displayLocation(location: location)
                 }
                 return cell
             }
@@ -564,6 +569,63 @@ public class ALKConversationTableViewController: UITableViewController {
         tableView.scrollToRow(at: indexPath, at: .top, animated: true)
     }
 
+    private func displayLocation(location: ALKLocationPreviewViewModel) {
+        let latLonString = String(format: "%f,%f", location.coordinate.latitude, location.coordinate.longitude)
+        let locationString = String(format: "https://maps.google.com/maps?q=loc:%@", latLonString)
+        guard let locationUrl = URL(string: locationString) else { return }
+        UIApplication.shared.openURL(locationUrl)
+    }
+
+    private func playAudioPress(identifier: String) {
+        DispatchQueue.main.async { [weak self] in
+            NSLog("play audio pressed")
+            guard let weakSelf = self else { return }
+
+            //if we have previously play audio, stop it first
+            if !weakSelf.audioPlayer.getCurrentAudioTrack().isEmpty && weakSelf.audioPlayer.getCurrentAudioTrack() != identifier {
+                //pause
+                NSLog("already playing, change it to pause")
+                guard var lastMessage =  weakSelf.viewModel.messageFor(identifier: weakSelf.audioPlayer.getCurrentAudioTrack()) else {return}
+
+                if Int(lastMessage.voiceCurrentDuration) > 0 {
+                    lastMessage.voiceCurrentState = .pause
+                    lastMessage.voiceCurrentDuration = weakSelf.audioPlayer.secLeft
+                } else {
+                    let lastMessageCopy = lastMessage
+                    lastMessage.voiceCurrentDuration = lastMessageCopy.voiceTotalDuration
+                    lastMessage.voiceCurrentState = .stop
+                }
+                weakSelf.audioPlayer.pauseAudio()
+            }
+            NSLog("now it will be played")
+            //now play
+            guard var currentVoice =  weakSelf.viewModel.messageFor(identifier: identifier) else {return}
+            if currentVoice.voiceCurrentState == .playing {
+                currentVoice.voiceCurrentState = .pause
+                currentVoice.voiceCurrentDuration = weakSelf.audioPlayer.secLeft
+                weakSelf.audioPlayer.pauseAudio()
+                weakSelf.tableView.reloadData()
+            }
+            else {
+                NSLog("reset time to total duration")
+                //reset time to total duration
+                if currentVoice.voiceCurrentState  == .stop || currentVoice.voiceCurrentDuration < 1 {
+                    let currentVoiceCopy = currentVoice
+                    currentVoice.voiceCurrentDuration = currentVoiceCopy.voiceTotalDuration
+                }
+
+                if let data = currentVoice.voiceData {
+                    let voice = data as NSData
+                    //start playing
+                    NSLog("Start playing")
+                    weakSelf.audioPlayer.setAudioFile(data: voice, delegate: weakSelf, playFrom: currentVoice.voiceCurrentDuration,lastPlayTrack:currentVoice.identifier)
+                    currentVoice.voiceCurrentState = .playing
+                    weakSelf.tableView.reloadData()
+                }
+            }
+        }
+    }
+
 }
 
 //MARK: - UICollectionView delegates and datasource methods
@@ -648,5 +710,73 @@ extension ALKConversationTableViewController: UICollectionViewDataSource,UIColle
             return CGSize(width: width, height: height)
         }
         return CGSize(width: self.view.frame.width-50, height: 350)
+    }
+}
+
+extension ALKConversationTableViewController: ALKAudioPlayerProtocol {
+
+    func reloadVoiceCell() {
+        for cell in tableView.visibleCells {
+            guard let indexPath = tableView.indexPath(for: cell) else {return}
+            if let message = viewModel.messageFor(indexPath: indexPath) {
+                if message.messageType == .voice && message.identifier == audioPlayer.getCurrentAudioTrack(){
+                    print("voice cell reloaded with row: ", indexPath.row, indexPath.section)
+                    tableView.reloadSections([indexPath.section], with: .none)
+                    break
+                }
+            }
+        }
+    }
+
+    func audioPlaying(maxDuratation: CGFloat, atSec: CGFloat,lastPlayTrack:String) {
+
+        DispatchQueue.main.async { [weak self] in
+            guard let weakSelf = self else { return }
+            guard var currentVoice =  weakSelf.viewModel.messageFor(identifier: lastPlayTrack) else {return}
+            if currentVoice.messageType == .voice {
+
+                if currentVoice.identifier == lastPlayTrack {
+                    if atSec <= 0 {
+                        currentVoice.voiceCurrentState = .stop
+                        currentVoice.voiceCurrentDuration = 0
+                    } else {
+                        currentVoice.voiceCurrentState = .playing
+                        currentVoice.voiceCurrentDuration = atSec
+                    }
+                }
+                print("audio playing id: ", currentVoice.identifier)
+                weakSelf.reloadVoiceCell()
+            }
+        }
+    }
+
+    func audioStop(maxDuratation: CGFloat,lastPlayTrack:String) {
+
+        DispatchQueue.main.async { [weak self] in
+            guard let weakSelf = self else { return }
+
+            guard var currentVoice =  weakSelf.viewModel.messageFor(identifier: lastPlayTrack) else {return}
+            if currentVoice.messageType == .voice {
+                if currentVoice.identifier == lastPlayTrack {
+                    currentVoice.voiceCurrentState = .stop
+                    currentVoice.voiceCurrentDuration = 0.0
+                }
+            }
+            weakSelf.reloadVoiceCell()
+        }
+    }
+
+    func stopAudioPlayer(){
+        DispatchQueue.main.async { [weak self] in
+            guard let weakSelf = self else { return }
+            if var lastMessage = weakSelf.viewModel.messageFor(identifier: weakSelf.audioPlayer.getCurrentAudioTrack()) {
+
+                if lastMessage.voiceCurrentState == .playing {
+                    weakSelf.audioPlayer.pauseAudio()
+                    lastMessage.voiceCurrentState = .pause
+                    weakSelf.reloadVoiceCell()
+                }
+            }
+        }
     }
 }

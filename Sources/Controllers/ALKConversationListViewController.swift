@@ -179,23 +179,20 @@ open class ALKConversationListViewController: ALKBaseViewController, Localizable
         alMqttConversationService = ALMQTTConversationService.sharedInstance()
         alMqttConversationService.mqttConversationDelegate = self
         alMqttConversationService.subscribeToConversation()
-        dbService = dbServiceType.init()
-        dbService.delegate = self
-        viewModel = viewModelType.init()
-        viewModel.delegate = self
         viewModel.localizationFileName = configuration.localizedStringFileName
-        viewModel.prepareController(dbService: dbService)
         setupView()
     }
 
     override open func viewDidAppear(_ animated: Bool) {
         print("contact id: ", contactId as Any)
-        if contactId != nil || channelKey != nil || conversationId != nil {
-            print("contact id present")
-            launchChat(contactId: contactId, groupId: channelKey, conversationId: conversationId)
-            self.contactId = nil
-            self.channelKey = nil
-            self.conversationId = nil
+        DispatchQueue.main.async {
+            if self.contactId != nil || self.channelKey != nil || self.conversationId != nil {
+                print("launch chat from push notification")
+                self.launchChat(contactId: self.contactId, groupId: self.channelKey, conversationId: self.conversationId)
+                self.contactId = nil
+                self.channelKey = nil
+                self.conversationId = nil
+            }
         }
     }
 
