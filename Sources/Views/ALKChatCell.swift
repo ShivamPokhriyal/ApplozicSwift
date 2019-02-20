@@ -1,6 +1,6 @@
 //
 //  ChatCell.swift
-//  
+//
 //
 //  Created by Mukesh Thawani on 04/05/17.
 //  Copyright © 2017 Applozic. All rights reserved.
@@ -26,6 +26,7 @@ public protocol ALKChatViewModelProtocol {
     var channelKey: NSNumber? { get }
     var conversationId: NSNumber! {get set}
     var createdAt: String? { get }
+    var messageType: ALKMessageType { get }
 }
 
 enum ALKChatCellAction {
@@ -42,6 +43,10 @@ protocol ALKChatCellDelegate: class {
 }
 
 final class ALKChatCell: MGSwipeTableCell {
+
+    enum ConstraintIdentifier: String {
+        case iconHeightIdentifier = "iconViewHeight"
+    }
 
     private var avatarImageView: UIImageView = {
         let imv = UIImageView()
@@ -96,6 +101,15 @@ final class ALKChatCell: MGSwipeTableCell {
         return bt
     }()
 
+    private var emailIcon: UIImageView = {
+        let imv = UIImageView()
+        imv.contentMode = .scaleAspectFill
+        imv.clipsToBounds = true
+        imv.isHidden = true
+        imv.image = UIImage(named: "alk_email_icon", in: Bundle.applozic, compatibleWith: nil)
+        return imv
+    }()
+
     // MARK: BadgeNumber
     private lazy var badgeNumberView: UIView = {
         let view = UIView(frame: .zero)
@@ -127,7 +141,7 @@ final class ALKChatCell: MGSwipeTableCell {
         view.backgroundColor = UIColor.onlineGreen()
         return view
     }()
-    
+
     let muteButton: MGSwipeButton = MGSwipeButton.init(type: .custom)
 
     weak var chatCellDelegate: ALKChatCellDelegate?
@@ -176,7 +190,7 @@ final class ALKChatCell: MGSwipeTableCell {
         // set backgroundColor of badgeNumber
         badgeNumberView.setBackgroundColor(.background(.main))
     }
-    
+
     private func isConversationMuted(viewModel: ALKChatViewModelProtocol) -> Bool{
         if let channelKey = viewModel.channelKey,
             let channel = ALChannelService().getChannelByKey(channelKey){
@@ -197,7 +211,7 @@ final class ALKChatCell: MGSwipeTableCell {
             return true
         }
     }
-    
+
     var viewModel: ALKChatViewModelProtocol?
 
     func update(viewModel: ALKChatViewModelProtocol, identity: ALKIdentityProtocol?, placeholder: UIImage? = nil) {
@@ -246,19 +260,27 @@ final class ALKChatCell: MGSwipeTableCell {
         }else {
             muteButton.setImage(UIImage(named: "icon_mute_inactive", in: Bundle.applozic, compatibleWith: nil), for: .normal)
         }
- 
+
         muteButton.frame = CGRect.init(x: 0, y: 0, width: 69, height: 69)
         muteButton.callback = { [weak self] (buttnon) in
 
             guard let strongSelf = self else {return true}
             guard let viewModel = strongSelf.viewModel else {return true}
-            
+
             if strongSelf.isConversationMuted(viewModel: viewModel){
                 strongSelf.chatCellDelegate?.chatCell(cell: strongSelf, action: .unmute, viewModel: viewModel)
             }else {
                 strongSelf.chatCellDelegate?.chatCell(cell: strongSelf, action: .mute, viewModel: viewModel)
             }
             return true
+        }
+
+        if(viewModel.messageType == .email){
+            emailIcon.isHidden = false
+            emailIcon.constraint(withIdentifier: ConstraintIdentifier.iconHeightIdentifier.rawValue)?.constant = 24
+        }else{
+            emailIcon.isHidden = true
+            emailIcon.constraint(withIdentifier:ConstraintIdentifier.iconHeightIdentifier.rawValue)?.constant = 0
         }
 
         self.rightButtons = [muteButton]
@@ -279,7 +301,7 @@ final class ALKChatCell: MGSwipeTableCell {
         onlineStatusView.isHidden = true
 
         if !viewModel.isGroupChat {
-            
+
             let contactService = ALContactService()
             guard let contactId = viewModel.contactId,
             let contact = contactService.loadContact(byKey: "userId", value: contactId) else {
@@ -307,7 +329,7 @@ final class ALKChatCell: MGSwipeTableCell {
 
     private func setupConstraints() {
 
-        contentView.addViewsForAutolayout(views: [avatarImageView, nameLabel, locationLabel,lineView,voipButton,/*favoriteButton,*/badgeNumberView, timeLabel, onlineStatusView])
+        contentView.addViewsForAutolayout(views: [avatarImageView, nameLabel, locationLabel,lineView,voipButton,/*favoriteButton,*/badgeNumberView, timeLabel, onlineStatusView,emailIcon])
 
         // setup constraint of imageProfile
         avatarImageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 17.0).isActive = true
@@ -321,10 +343,15 @@ final class ALKChatCell: MGSwipeTableCell {
         nameLabel.leadingAnchor.constraint(equalTo: avatarImageView.trailingAnchor, constant: 12).isActive = true
         nameLabel.trailingAnchor.constraint(equalTo: timeLabel.leadingAnchor, constant: -5).isActive = true
 
+        emailIcon.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 4).isActive = true
+        emailIcon.heightAnchor.constraint(equalToConstant: 15).isActive = true
+        emailIcon.leadingAnchor.constraint(equalTo: avatarImageView.trailingAnchor, constant: 12).isActive = true
+        emailIcon.widthAnchor.constraintEqualToAnchor(constant: 0,identifier: ConstraintIdentifier.iconHeightIdentifier.rawValue).isActive = true
+
         // setup constraint of mood
         locationLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 2).isActive = true
         locationLabel.heightAnchor.constraint(equalToConstant: 20).isActive = true
-        locationLabel.leadingAnchor.constraint(equalTo: avatarImageView.trailingAnchor, constant: 12).isActive = true
+        locationLabel.leadingAnchor.constraint(equalTo: emailIcon.trailingAnchor, constant: 5).isActive = true
         locationLabel.trailingAnchor.constraint(equalTo: voipButton.leadingAnchor, constant: -19).isActive = true
 
         // setup constraint of line
@@ -413,5 +440,5 @@ final class ALKChatCell: MGSwipeTableCell {
     func randomInt(min: Int, max:Int) -> Int {
         return min + Int(arc4random_uniform(UInt32(max - min + 1)))
     }
-    
+
 }
