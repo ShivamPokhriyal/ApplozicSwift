@@ -28,15 +28,15 @@ open class ALKConversationListViewController: ALKBaseViewController, Localizable
     public var viewModelType = ALKConversationListViewModel.self
     public var conversationViewModelType = ALKConversationViewModel.self
     public weak var delegate: ALKConversationListDelegate?
+    public var dbService: ALMessageDBService!
+    public var viewModel: ALKConversationListViewModel!
+    public lazy var conversationListTableViewController = ALKConversationListTableViewController(viewModel: self.viewModel, dbService: self.dbService, configuration: self.configuration, delegate: self, showSearch: false)
 
-    fileprivate lazy var conversationListTableViewController = ALKConversationListTableViewController(viewModel: self.viewModel, dbService: self.dbService, configuration: self.configuration, delegate: self, showSearch: false)
     fileprivate var tapToDismiss:UITapGestureRecognizer!
     fileprivate var alMqttConversationService: ALMQTTConversationService!
-    fileprivate var dbService: ALMessageDBService!
     fileprivate let activityIndicator = UIActivityIndicatorView(style: UIActivityIndicatorView.Style.gray)
     fileprivate var localizedStringFileName: String!
 
-    var viewModel: ALKConversationListViewModel!
     // To check if coming from push notification
     var contactId: String?
     var channelKey: NSNumber?
@@ -63,6 +63,7 @@ open class ALKConversationListViewController: ALKBaseViewController, Localizable
         dbService.delegate = self
         viewModel = viewModelType.init()
         viewModel.delegate = self
+        viewModel.localizationFileName = localizedStringFileName
     }
 
     deinit {
@@ -179,12 +180,6 @@ open class ALKConversationListViewController: ALKBaseViewController, Localizable
         alMqttConversationService = ALMQTTConversationService.sharedInstance()
         alMqttConversationService.mqttConversationDelegate = self
         alMqttConversationService.subscribeToConversation()
-        dbService = dbServiceType.init()
-        dbService.delegate = self
-        viewModel = viewModelType.init()
-        viewModel.delegate = self
-        viewModel.localizationFileName = configuration.localizedStringFileName
-        viewModel.prepareController(dbService: dbService)
         setupView()
     }
 

@@ -28,7 +28,7 @@ public protocol ALKChatViewModelProtocol {
     var createdAt: String? { get }
 }
 
-enum ALKChatCellAction {
+public enum ALKChatCellAction {
     case delete
     case favorite
     case store
@@ -37,11 +37,11 @@ enum ALKChatCellAction {
     case unmute
 }
 
-protocol ALKChatCellDelegate: class {
+public protocol ALKChatCellDelegate: class {
     func chatCell(cell: ALKChatCell, action: ALKChatCellAction, viewModel: ALKChatViewModelProtocol)
 }
 
-final class ALKChatCell: MGSwipeTableCell {
+public final class ALKChatCell: MGSwipeTableCell {
 
     private var avatarImageView: UIImageView = {
         let imv = UIImageView()
@@ -156,7 +156,7 @@ final class ALKChatCell: MGSwipeTableCell {
         //favoriteButton.removeTarget(self, action:  #selector(favoriteTapped(button:)), for: .touchUpInside)
     }
 
-    override func setHighlighted(_ highlighted: Bool, animated: Bool) {
+    override public func setHighlighted(_ highlighted: Bool, animated: Bool) {
         super.setHighlighted(highlighted, animated: animated)
 
         guard let _ = viewModel else {
@@ -172,7 +172,7 @@ final class ALKChatCell: MGSwipeTableCell {
         badgeNumberView.setBackgroundColor(.background(.main))
     }
 
-    override func setSelected(_ selected: Bool, animated: Bool) {
+    override public func setSelected(_ selected: Bool, animated: Bool) {
         super.setSelected(selected, animated: animated)
 
         guard let _ = viewModel else {
@@ -188,7 +188,27 @@ final class ALKChatCell: MGSwipeTableCell {
         // set backgroundColor of badgeNumber
         badgeNumberView.setBackgroundColor(.background(.main))
     }
-    
+
+    /// Use for group Only.
+    public func change(name: String, andImage imageUrl: String?) {
+        nameLabel.text = name
+        guard
+            let urlString = imageUrl,
+            let url = URL(string: urlString)
+            else {
+                hideImage(true)
+                avatarName.text = name.isEmpty ? "X": getFirstTwoLetters(text: name)
+                return
+        }
+        hideImage(false)
+        avatarImageView.kf.setImage(with: url)
+    }
+
+    private func hideImage(_ hide: Bool) {
+        avatarImageView.isHidden = hide
+        avatarName.isHidden = !hide
+    }
+
     private func isConversationMuted(viewModel: ALKChatViewModelProtocol) -> Bool{
         if let channelKey = viewModel.channelKey,
             let channel = ALChannelService().getChannelByKey(channelKey){
@@ -419,7 +439,7 @@ final class ALKChatCell: MGSwipeTableCell {
 //        comingSoonDelegate?.makeToast(SystemMessage.ComingSoon.Favorite, duration: 1.0, position: .center)
     }
 
-    override func setEditing(_ editing: Bool, animated: Bool) {
+    override public func setEditing(_ editing: Bool, animated: Bool) {
         super.setEditing(editing, animated: animated)
     }
 

@@ -28,7 +28,7 @@ public protocol ALKConversationListTableViewDelegate: class {
  
  It uses ALKChatCell and EmptyChatCell as tableview cell and handles the swipe interaction of user with the chat cell.
  */
-public class ALKConversationListTableViewController: UITableViewController, Localizable {
+open class ALKConversationListTableViewController: UITableViewController, Localizable {
     
     //MARK: - PUBLIC PROPERTIES
     public var viewModel: ALKConversationListViewModelProtocol
@@ -74,7 +74,7 @@ public class ALKConversationListTableViewController: UITableViewController, Loca
         super.init(nibName: nil, bundle: nil)
     }
     
-    required init?(coder aDecoder: NSCoder) {
+    required public init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
@@ -87,7 +87,7 @@ public class ALKConversationListTableViewController: UITableViewController, Loca
     }
     
     //MARK: - VIEW LIFE CYCLE
-    override public func viewDidLoad() {
+    override open func viewDidLoad() {
         super.viewDidLoad()
         setupView()
         searchBar.delegate = self
@@ -97,7 +97,7 @@ public class ALKConversationListTableViewController: UITableViewController, Loca
         tableView.estimatedRowHeight = 0
     }
     
-    override public func viewWillDisappear(_ animated: Bool) {
+    override open func viewWillDisappear(_ animated: Bool) {
         if let text = searchBar.text, !text.isEmpty {
             searchBar.text = ""
         }
@@ -107,18 +107,18 @@ public class ALKConversationListTableViewController: UITableViewController, Loca
     }
 
     //MARK: - TABLE VIEW DATA SOURCE METHODS
-    public override func numberOfSections(in tableView: UITableView) -> Int {
+    override open func numberOfSections(in tableView: UITableView) -> Int {
         return dataSource.numberOfSections(in: tableView)
     }
     
-    public override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    override open func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if searchActive {
             return searchFilteredChat.count
         }
         return dataSource.tableView(tableView, numberOfRowsInSection: section)
     }
     
-    public override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    override open func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         if searchActive {
             guard let chat = searchFilteredChat[indexPath.row] as? ALMessage else {
                 return UITableViewCell()
@@ -131,12 +131,12 @@ public class ALKConversationListTableViewController: UITableViewController, Loca
         return dataSource.tableView(tableView, cellForRowAt: indexPath)
     }
     
-    public override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+    override open func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
         return true
     }
     
     //MARK: - TABLE VIEW DELEGATE METHODS
-    public override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    override open func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if searchActive {
             guard let message = searchFilteredChat[indexPath.row] as? ALMessage else {
                 return
@@ -150,15 +150,15 @@ public class ALKConversationListTableViewController: UITableViewController, Loca
         }
     }
     
-    public override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+    override open func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         return searchBar
     }
     
-    public override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+    override open func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         return showSearch ? 50 : 0
     }
     
-    public override func tableView(_ tableView: UITableView, viewForFooterInSection section: Int) -> UIView? {
+    override open func tableView(_ tableView: UITableView, viewForFooterInSection section: Int) -> UIView? {
         
         let emptyCellView = ALKEmptyView.instanceFromNib()
         
@@ -181,7 +181,7 @@ public class ALKConversationListTableViewController: UITableViewController, Loca
         return emptyCellView
     }
     
-    public override func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
+    override open func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
         return viewModel.numberOfRowsInSection(0) == 0 ? 325 : 0
     }
 
@@ -292,7 +292,7 @@ extension ALKConversationListTableViewController: UISearchResultsUpdating, UISea
 //MARK: - ALKChatCell DELEGATE
 extension ALKConversationListTableViewController: ALKChatCellDelegate {
     
-    func chatCell(cell: ALKChatCell, action: ALKChatCellAction, viewModel: ALKChatViewModelProtocol) {
+    public func chatCell(cell: ALKChatCell, action: ALKChatCellAction, viewModel: ALKChatViewModelProtocol) {
         
         switch action {
             
@@ -562,7 +562,7 @@ extension ALKConversationListTableViewController: Muteable {
 
 //MARK: - SCROLL VIEW DELEGATE
 extension ALKConversationListTableViewController {
-    override public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+    override open func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
         let height = scrollView.frame.size.height
         let contentYoffset = scrollView.contentOffset.y
         let reloadDistance: CGFloat = 40.0 // Added this so that loading starts 40 points before the end
