@@ -12,4 +12,7 @@ extension Bundle {
     static var applozic: Bundle {
         return Bundle(for: ALKConversationListViewController.self)
     }
+    static var richMessageKit: Bundle {
+        return Bundle(for: QuickReplyView.self)
+    }
 }
