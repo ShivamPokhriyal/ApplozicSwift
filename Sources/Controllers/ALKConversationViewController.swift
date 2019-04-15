@@ -331,7 +331,9 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
         alMqttConversationService = ALMQTTConversationService.sharedInstance()
         if individualLaunch {
             alMqttConversationService.mqttConversationDelegate = self
-            alMqttConversationService.subscribeToConversation()
+            DispatchQueue.global().async {
+                self.alMqttConversationService.subscribeToConversation()
+            }
         }
 
         if self.viewModel.isGroup == true {
@@ -419,9 +421,17 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
 
     func checkUserBlock() {
         guard !viewModel.isGroup, let contactId = viewModel.contactId else { return }
-        ALUserService().getUserDetail(contactId) { (contact) in
-            guard let contact = contact, contact.block else { return }
-            self.chatBar.disableChat(message: self.localizedString(forKey: "UnblockToEnableChat", withDefaultValue: SystemMessage.Information.UnblockToEnableChat, fileName: self.configuration.localizedStringFileName))
+        DispatchQueue.global(qos: .background).async {
+            ALUserService().getUserDetail(contactId) { (contact) in
+                DispatchQueue.main.async {
+                    guard let contact = contact, contact.block else { return }
+                    let message = self.localizedString(
+                        forKey: "UnblockToEnableChat",
+                        withDefaultValue: SystemMessage.Information.UnblockToEnableChat,
+                        fileName: self.configuration.localizedStringFileName)
+                    self.chatBar.disableChat(message: message)
+                }
+            }
         }
     }
 
@@ -756,7 +766,9 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
         checkUserBlock()
         subscribeChannelToMqtt()
 
-        viewModel.prepareController()
+        DispatchQueue.global(qos: .background).async {
+            self.viewModel.prepareController()
+        }
     }
 
     /// Call this before changing viewModel contents
@@ -856,19 +868,27 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
 
     fileprivate func subscribeChannelToMqtt() {
         let channelService = ALChannelService()
-        if viewModel.isGroup, let groupId = viewModel.channelKey, !channelService.isChannelLeft(groupId) && !ALChannelService.isChannelDeleted(groupId) {
-            if !viewModel.isOpenGroup {
-                self.alMqttConversationService.subscribe(toChannelConversation: groupId)
-            } else {
-                self.alMqttConversationService.subscribe(toOpenChannel: groupId)
+        if viewModel.isGroup,
+            let groupId = viewModel.channelKey,
+            !channelService.isChannelLeft(groupId),
+            !ALChannelService.isChannelDeleted(groupId) {
+            DispatchQueue.global(qos: .background).async {
+                if !self.viewModel.isOpenGroup {
+                    self.alMqttConversationService.subscribe(toChannelConversation: groupId)
+                } else {
+                    self.alMqttConversationService.subscribe(toOpenChannel: groupId)
+                }
             }
         } else if !viewModel.isGroup {
-            self.alMqttConversationService.subscribe(toChannelConversation: nil)
+            DispatchQueue.global(qos: .background).async {
+                self.alMqttConversationService.subscribe(toChannelConversation: nil)
+            }
         }
         if viewModel.isGroup, ALUserDefaultsHandler.isUserLoggedInUserSubscribedMQTT(){
-            self.alMqttConversationService.unSubscribe(toChannelConversation: nil)
+            DispatchQueue.global(qos: .background).async {
+                self.alMqttConversationService.unSubscribe(toChannelConversation: nil)
+            }
         }
-
     }
 
 
@@ -1243,34 +1263,38 @@ extension ALKConversationViewController: ALKConversationViewModelDelegate {
 
 
     public func loadingStarted() {
-        activityIndicator.startAnimating()
+        DispatchQueue.main.async {
+            self.activityIndicator.startAnimating()
+        }
     }
 
     public func loadingFinished(error: Error?) {
-        activityIndicator.stopAnimating()
-        let oldSectionCount = tableView.numberOfSections
-        tableView.reloadData()
-        let newSectionCount = tableView.numberOfSections
-        if newSectionCount > oldSectionCount {
-            let offset = newSectionCount - oldSectionCount - 1
-            tableView.scrollToRow(at: IndexPath(row: 0, section: offset), at: .none, animated: false)
-        }
-        print("loading finished")
         DispatchQueue.main.async {
+            self.activityIndicator.stopAnimating()
+            let oldSectionCount = self.tableView.numberOfSections
+            self.tableView.reloadData()
+            let newSectionCount = self.tableView.numberOfSections
+            if newSectionCount > oldSectionCount {
+                let offset = newSectionCount - oldSectionCount - 1
+                self.tableView.scrollToRow(at: IndexPath(row: 0, section: offset), at: .none, animated: false)
+            }
+            print("loading finished")
             if self.viewModel.isFirstTime {
                 self.tableView.scrollToBottom(animated: false)
                 self.viewModel.isFirstTime = false
             }
+            guard !self.viewModel.isOpenGroup else {return}
+            self.viewModel.markConversationRead()
         }
-        guard !viewModel.isOpenGroup else {return}
-        viewModel.markConversationRead()
     }
 
     public func messageUpdated() {
-        if activityIndicator.isAnimating {
-            activityIndicator.stopAnimating()
+        DispatchQueue.main.async {
+            if self.activityIndicator.isAnimating {
+                self.activityIndicator.stopAnimating()
+            }
+            self.tableView.reloadData()
         }
-        tableView.reloadData()
     }
 
     public func updateMessageAt(indexPath: IndexPath) {

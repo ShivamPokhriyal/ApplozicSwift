@@ -979,33 +979,47 @@ open class ALKConversationViewModel: NSObject, Localizable {
     }
 
     func currentConversationProfile(completion: @escaping (ALKConversationProfile?) -> ()) {
-        if conversationId != nil {
-            ALConversationService().fetchTopicDetails(conversationId) { (error, conversationProxy) in
-                guard error == nil, let conversationProxy = conversationProxy else {
-                    print("Error while fetching conversation details \(String(describing: error))")
-                    completion(nil)
-                    return
+        DispatchQueue.global(qos: .background).async {
+            if self.conversationId != nil {
+                ALConversationService().fetchTopicDetails(self.conversationId) { (error, conversationProxy) in
+                    guard error == nil, let conversationProxy = conversationProxy else {
+                        print("Error while fetching conversation details \(String(describing: error))")
+                        DispatchQueue.main.async {
+                            completion(nil)
+                        }
+                        return
+                    }
+                    DispatchQueue.main.async {
+                        completion(self.conversationProfileFrom(contact: nil, channel: nil, conversation: conversationProxy))
+                    }
                 }
-                completion(self.conversationProfileFrom(contact: nil, channel: nil, conversation: conversationProxy))
-            }
-        } else if channelKey != nil {
-            ALChannelService().getChannelInformation(channelKey, orClientChannelKey: nil) { (channel) in
-                guard let channel = channel else {
-                    print("Error while fetching channel details")
-                    completion(nil)
-                    return
+            } else if self.channelKey != nil {
+                ALChannelService().getChannelInformation(self.channelKey, orClientChannelKey: nil) { (channel) in
+                    guard let channel = channel else {
+                        print("Error while fetching channel details")
+                        DispatchQueue.main.async {
+                            completion(nil)
+                        }
+                        return
+                    }
+                    DispatchQueue.main.async {
+                        completion(self.conversationProfileFrom(contact: nil, channel: channel, conversation: nil))
+                    }
                 }
-                completion(self.conversationProfileFrom(contact: nil, channel: channel, conversation: nil))
-            }
-        } else if contactId != nil {
-            ALUserService().getUserDetail(contactId) { (contact) in
-                guard let contact = contact else {
-                    print("Error while fetching contact details")
-                    completion(nil)
-                    return
+            } else if self.contactId != nil {
+                ALUserService().getUserDetail(self.contactId) { (contact) in
+                    guard let contact = contact else {
+                        print("Error while fetching contact details")
+                        DispatchQueue.main.async {
+                            completion(nil)
+                        }
+                        return
+                    }
+                    self.updateUserDetail(contact.userId)
+                    DispatchQueue.main.async {
+                        completion(self.conversationProfileFrom(contact: contact, channel: nil, conversation: nil))
+                    }
                 }
-                self.updateUserDetail(contact.userId)
-                completion(self.conversationProfileFrom(contact: contact, channel: nil, conversation: nil))
             }
         }
     }
