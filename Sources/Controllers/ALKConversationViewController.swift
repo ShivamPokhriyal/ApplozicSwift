@@ -687,6 +687,9 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
 
             switch action {
 
+            case .chatBarTextBeginEdit():
+                weakSelf.viewModel.sendKeyboardBeginTyping()
+
             case .sendText(let button, let message):
 
                 if message.count < 1 {
@@ -727,10 +730,8 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
                 print("About to send this message: ", message)
                 weakSelf.viewModel.send(message: message, isOpenGroup: weakSelf.viewModel.isOpenGroup, metadata:self?.configuration.messageMetadata)
                 button.isUserInteractionEnabled = true
+
             case .chatBarTextChange(_):
-
-                weakSelf.viewModel.sendKeyboardBeginTyping()
-
                 UIView.animate(withDuration: 0.05, animations: { () in
                     weakSelf.view.layoutIfNeeded()
                 }, completion: { [weak self] (_) in
