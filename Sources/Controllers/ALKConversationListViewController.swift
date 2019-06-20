@@ -153,6 +153,11 @@ open class ALKConversationListViewController: ALKBaseViewController, Localizable
             weakSelf.tableView.reloadData()
         })
 
+        NotificationCenter.default.addObserver(forName: NSNotification.Name(rawValue: "CONVERSATION_DELETION"), object: nil, queue: nil) { [weak self] notification in
+            guard let weakSelf = self, weakSelf.viewModel != nil else { return }
+            weakSelf.viewModel.deleteChatWith(id: notification.object)
+        }
+
     }
 
     override func removeObserver() {
@@ -164,6 +169,7 @@ open class ALKConversationListViewController: ALKBaseViewController, Localizable
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name(rawValue: "reloadTable"), object: nil)
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name(rawValue: "USER_DETAILS_UPDATE_CALL"), object: nil)
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name(rawValue: "UPDATE_CHANNEL_NAME"), object: nil)
+        NotificationCenter.default.removeObserver(self, name: NSNotification.Name(rawValue: "CONVERSATION_DELETION"), object: nil)
     }
 
     override open func viewWillAppear(_ animated: Bool) {
@@ -340,6 +346,13 @@ extension ALKConversationListViewController: ALKConversationListViewModelDelegat
     open func rowUpdatedAt(position: Int) {
         tableView.reloadRows(at: [IndexPath(row: position, section: 0)], with: .automatic)
     }
+
+    func deleteRow(at position: Int) {
+        tableView.beginUpdates()
+        tableView.deleteRows(at: [IndexPath(row: position, section: 0)], with: .none)
+        tableView.endUpdates()
+    }
+
 }
 
 extension ALKConversationListViewController: ALMQTTConversationDelegate {

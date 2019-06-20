@@ -14,6 +14,7 @@ protocol ALKConversationListViewModelDelegate: class {
     func startedLoading()
     func listUpdated()
     func rowUpdatedAt(position: Int)
+    func deleteRow(at position: Int)
 }
 
 /**
@@ -135,6 +136,25 @@ final public class ALKConversationListViewModel: NSObject, ALKConversationListVi
                 return
         }
         allMessages.remove(at: index)
+    }
+
+    func deleteChatWith(id: Any?) {
+        for index in 0..<allMessages.count {
+            guard let message = allMessages[index] as? ALMessage else { continue }
+            if let channelKey = id as? NSNumber {
+                if message.channelKey == channelKey {
+                    allMessages.remove(at: index)
+                    delegate?.deleteRow(at: index)
+                    break
+                }
+            } else if let contactId = id as? String {
+                if message.contactId == contactId && message.channelKey == nil {
+                    allMessages.remove(at: index)
+                    delegate?.deleteRow(at: index)
+                    break
+                }
+            }
+        }
     }
 
     func updateTypingStatus(in viewController: ALKConversationViewController, userId: String, status: Bool) {

@@ -315,6 +315,11 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
             guard let weakSelf = self, weakSelf.viewModel != nil else { return }
             weakSelf.viewModel.sendKeyboardDoneTyping()
         }
+
+        NotificationCenter.default.addObserver(forName: NSNotification.Name(rawValue: "CONVERSATION_DELETION"), object: nil, queue: nil) { [weak self] notification in
+            guard let weakSelf = self, weakSelf.viewModel != nil else { return }
+            weakSelf.deleteChatWith(id: notification.object)
+        }
     }
 
     override func removeObserver() {
@@ -478,6 +483,22 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
         }
         // Disable group details for support group, open group and when user is not a member.
         navigationBar.disableTitleAction = channel.type == 10 || channel.type == 6 || !members.contains(ALUserDefaultsHandler.getUserId())
+    }
+
+    func deleteChatWith(id: Any?) {
+        if let channelKey = id as? NSNumber {
+            if viewModel.channelKey == channelKey {
+                viewModel.clearViewModel()
+                tableView.reloadData()
+                unreadScrollButton.isHidden = true
+            }
+        } else if let contactId = id as? String {
+            if viewModel.contactId == contactId && viewModel.channelKey == nil {
+                viewModel.clearViewModel()
+                tableView.reloadData()
+                unreadScrollButton.isHidden = true
+            }
+        }
     }
 
     func prepareContextView(){
