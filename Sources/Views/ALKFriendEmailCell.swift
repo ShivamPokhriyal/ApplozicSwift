@@ -68,7 +68,7 @@ open class ALKFriendEmailCell: UITableViewCell {
         return timeLabel
     }()
 
-    lazy var emailViewHeight = emailView.heightAnchor.constraint(equalToConstant: ALKEmailView.rowHeight(nil))
+    lazy var emailViewHeight = emailView.heightAnchor.constraint(equalToConstant: 0)
 
     // MARK: - Initializer
 
@@ -84,9 +84,10 @@ open class ALKFriendEmailCell: UITableViewCell {
 
     // MARK: - Internal methods
 
-    func update(viewModel: ALKMessageViewModel) {
+    func update(viewModel: ALKMessageViewModel, maxWidth: CGFloat) {
         guard let emailMessage = viewModel.message else { return }
-        emailView.loadWebView(with: emailMessage)
+        emailView.update(text: emailMessage, type: viewModel.messageType)
+        emailViewHeight.constant = ALKFriendEmailCell.emailHeight(viewModel: viewModel, width: maxWidth)
         nameLabel.text = viewModel.displayName
         timeLabel.text = viewModel.time
 
@@ -99,17 +100,20 @@ open class ALKFriendEmailCell: UITableViewCell {
         avatarImageView.kf.setImage(with: resource, placeholder: placeHolder, options: nil, progressBlock: nil, completionHandler: nil)
     }
 
-    func updateHeight(_ height: CGFloat?) {
-        emailView.updateHeight(height)
-        emailViewHeight.constant = ALKEmailView.rowHeight(height)
-    }
-
-    class func rowHeight(viewModel: ALKMessageViewModel, height: CGFloat?) -> CGFloat {
+    class func rowHeight(viewModel: ALKMessageViewModel, maxWidth: CGFloat) -> CGFloat {
         var totalHeight: CGFloat = 0
         totalHeight += Padding.NameLabel.height + Padding.NameLabel.top
         totalHeight += Padding.TimeLabel.height + Padding.TimeLabel.top  /// time height
-        totalHeight += ALKEmailView.rowHeight(height) + Padding.EmailView.top
+        totalHeight += emailHeight(viewModel: viewModel, width: maxWidth) + Padding.EmailView.top
         return totalHeight
+    }
+
+    private class func emailHeight(viewModel: ALKMessageViewModel, width: CGFloat) -> CGFloat {
+        guard let message = viewModel.message else { return 0 }
+        let avatarWidth = Padding.AvatarImageView.leading + Padding.AvatarImageView.width
+        let emailPadding = Padding.EmailView.trailing + Padding.EmailView.leading + avatarWidth
+        let emailWidth = width - emailPadding
+        return ALKEmailView.height(text: message, maxWidth: emailWidth, type: viewModel.messageType)
     }
 
     // MARK: - Private helper methods

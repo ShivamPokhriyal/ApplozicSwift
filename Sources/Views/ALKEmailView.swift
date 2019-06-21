@@ -5,19 +5,19 @@
 //  Created by Shivam Pokhriyal on 13/03/19.
 //
 
-import Foundation
-import WebKit
+import UIKit
 
 class ALKEmailView: UIView {
 
     struct Height {
         static let emailView: CGFloat = 20
-        static let webView: CGFloat = 60
     }
 
     fileprivate var emailImage: UIImageView = {
         let sv = UIImageView()
-        sv.image = UIImage(named: "alk_replied_icon", in: Bundle.applozic, compatibleWith: nil)
+        sv.image = UIImage(named: "alk_replied_icon",
+                           in: Bundle.applozic,
+                           compatibleWith: nil)
         sv.isUserInteractionEnabled = false
         sv.contentMode = .center
         return sv
@@ -32,15 +32,20 @@ class ALKEmailView: UIView {
         return label
     }()
 
-    fileprivate var wkWebView: WKWebView!
+    private var emailTopView = UIView(frame: .zero)
 
-    fileprivate var activityIndicator = UIActivityIndicatorView(style: .gray)
+    fileprivate var htmlLabel: UILabel = {
+        let label = UILabel()
+        label.numberOfLines = 0
+//        label.font = UIFont(name: "Helvetica", size: 12)
+        label.isOpaque = true
+        return label
+    }()
 
-    fileprivate lazy var webViewHeight = wkWebView.heightAnchor.constraint(equalToConstant: Height.webView)
+    fileprivate lazy var emailViewHeight = emailTopView.heightAnchor.constraint(equalToConstant: 0)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        setupWebView()
         setupConstraints()
     }
 
@@ -48,91 +53,84 @@ class ALKEmailView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func setWebViewDelegate(delegate : WKNavigationDelegate, tag: Int) {
-        wkWebView.navigationDelegate = delegate
-        wkWebView.tag = tag
-    }
-
-    func loadWebView(with message: String) {
-        activityIndicator.startAnimating()
-        wkWebView.loadHTMLString(message, baseURL:nil)
-    }
-
-    func updateHeight(_ height: CGFloat?) {
-        guard let height = height else {
+    func update(text: String, type: ALKMessageType) {
+        switch type {
+        case .html:
+            hideEmailView(true)
+        case .email:
+            hideEmailView(false)
+        default:
+            print("😱😱😱Shouldn't come here.😱😱😱")
             return
         }
-        activityIndicator.stopAnimating()
-        webViewHeight.constant = height
+        DispatchQueue.global().async {
+            let attributedText = ALKEmailView.attributedStringFrom(text)
+            DispatchQueue.main.async {
+                self.htmlLabel.attributedText = attributedText
+            }
+        }
     }
 
-    class func rowHeight(_ webViewHeight: CGFloat?) -> CGFloat {
-        guard let webViewHeight = webViewHeight else {
-            return Height.emailView + Height.webView
+    class func height(text: String, maxWidth: CGFloat, type: ALKMessageType) -> CGFloat {
+        let extraHeight: CGFloat = (type == .html) ? 0 : Height.emailView
+        guard let attributedText = ALKEmailView.attributedStringFrom(text) else {
+            return extraHeight
         }
-        return Height.emailView + webViewHeight
+        return attributedText.heightWithConstrainedWidth(maxWidth) + extraHeight
     }
 
     // MARK: - Private helper methods
 
-    private func webViewConfiguration() -> WKWebViewConfiguration {
-        let viewportSource = """
-            var meta = document.createElement('meta');
-            meta.setAttribute('name', 'viewport');
-            meta.setAttribute('content', 'width=device-width');
-            meta.setAttribute('initial-scale', '1.0');
-            meta.setAttribute('shrink-to-fit', 'no');
-            document.getElementsByTagName('head')[0].appendChild(meta);
-        """
-        let viewportScript = WKUserScript(source: viewportSource, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
+    private class func attributedStringFrom(_ text: String) -> NSAttributedString? {
 
-        let disableCalloutSource = "document.documentElement.style.webkitTouchCallout='none';"
-
-        let disableCalloutScript = WKUserScript(source: disableCalloutSource, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
-
-        /// Add script
-        let controller = WKUserContentController()
-        controller.addUserScript(viewportScript)
-        controller.addUserScript(disableCalloutScript)
-
-        let webConfiguration = WKWebViewConfiguration()
-        webConfiguration.userContentController = controller
-        return webConfiguration
-    }
-
-    private func setupWebView() {
-        wkWebView = WKWebView(frame: .zero, configuration: webViewConfiguration())
-        wkWebView.translatesAutoresizingMaskIntoConstraints = false
-        wkWebView.backgroundColor = UIColor.white
-        wkWebView.allowsBackForwardNavigationGestures = false
-        wkWebView.contentMode = .scaleAspectFit
-        wkWebView.scrollView.isScrollEnabled = true
-        wkWebView.scrollView.showsVerticalScrollIndicator = true
-        wkWebView.scrollView.showsHorizontalScrollIndicator = true
-        wkWebView.scrollView.bounces = false
+        guard let htmlText = text.data(using: .utf8, allowLossyConversion: false) else {
+            print("🤯🤯🤯Could not create UTF8 formatted data from \(text)")
+            return nil
+        }
+        do {
+            return try NSAttributedString(
+                data: htmlText,
+                options: [
+                    .documentType: NSAttributedString.DocumentType.html,
+                    .characterEncoding: String.Encoding.utf8.rawValue],
+                documentAttributes: nil)
+        } catch {
+            print("Error \(error) while creating attributed string")
+            return nil
+        }
     }
 
     private func setupConstraints() {
         self.backgroundColor = .white
-        self.addViewsForAutolayout(views: [emailImage, emailLabel ,wkWebView, activityIndicator])
+        self.addViewsForAutolayout(views: [emailImage, emailLabel, emailTopView, htmlLabel])
 
-        emailImage.topAnchor.constraint(equalTo: self.topAnchor).isActive = true
-        emailImage.leadingAnchor.constraint(equalTo: self.leadingAnchor).isActive = true
-        emailImage.heightAnchor.constraint(equalToConstant: Height.emailView).isActive = true
-        emailImage.widthAnchor.constraint(equalToConstant: Height.emailView).isActive = true
+        NSLayoutConstraint.activate ([
+            emailTopView.topAnchor.constraint(equalTo: self.topAnchor),
+            emailTopView.leadingAnchor.constraint(equalTo: self.leadingAnchor),
+            emailTopView.trailingAnchor.constraint(equalTo: self.trailingAnchor),
+            emailViewHeight,
 
-        emailLabel.topAnchor.constraint(equalTo: self.topAnchor).isActive = true
-        emailLabel.trailingAnchor.constraint(equalTo: self.trailingAnchor).isActive = true
-        emailLabel.leadingAnchor.constraint(equalTo: emailImage.trailingAnchor).isActive = true
-        emailLabel.heightAnchor.constraint(equalToConstant: Height.emailView).isActive = true
+            emailImage.topAnchor.constraint(equalTo: emailTopView.topAnchor),
+            emailImage.leadingAnchor.constraint(equalTo: emailTopView.leadingAnchor),
+            emailImage.heightAnchor.constraint(equalToConstant: Height.emailView),
+            emailImage.widthAnchor.constraint(equalToConstant: Height.emailView),
 
-        wkWebView.topAnchor.constraint(equalTo: emailImage.bottomAnchor).isActive = true
-        wkWebView.trailingAnchor.constraint(equalTo: self.trailingAnchor).isActive = true
-        wkWebView.leadingAnchor.constraint(equalTo: self.leadingAnchor).isActive = true
-        webViewHeight.isActive = true
+            emailLabel.topAnchor.constraint(equalTo: emailTopView.topAnchor),
+            emailLabel.trailingAnchor.constraint(equalTo: emailTopView.trailingAnchor),
+            emailLabel.leadingAnchor.constraint(equalTo: emailImage.trailingAnchor),
+            emailLabel.heightAnchor.constraint(equalToConstant: Height.emailView),
 
-        activityIndicator.centerXAnchor.constraint(equalTo: wkWebView.centerXAnchor).isActive = true
-        activityIndicator.centerYAnchor.constraint(equalTo: wkWebView.centerYAnchor).isActive = true
+            htmlLabel.topAnchor.constraint(equalTo: emailTopView.bottomAnchor),
+            htmlLabel.trailingAnchor.constraint(equalTo: self.trailingAnchor),
+            htmlLabel.leadingAnchor.constraint(equalTo: self.leadingAnchor),
+            htmlLabel.bottomAnchor.constraint(equalTo: self.bottomAnchor)
+            ])
+    }
+
+    private func hideEmailView(_ hide: Bool) {
+        emailImage.isHidden = hide
+        emailLabel.isHidden = hide
+        emailViewHeight.constant = hide ? 0 : Height.emailView
     }
 
 }

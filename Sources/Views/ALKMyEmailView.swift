@@ -46,7 +46,7 @@ open class ALKMyEmailCell: UITableViewCell {
         return timeLabel
     }()
 
-    lazy var emailViewHeight = emailView.heightAnchor.constraint(equalToConstant: ALKEmailView.rowHeight(nil))
+    lazy var emailViewHeight = emailView.heightAnchor.constraint(equalToConstant: 0)
 
     // MARK: - Initializer
 
@@ -62,9 +62,10 @@ open class ALKMyEmailCell: UITableViewCell {
 
     // MARK: - Internal methods
 
-    func update(viewModel: ALKMessageViewModel) {
+    func update(viewModel: ALKMessageViewModel, maxWidth: CGFloat) {
         guard let emailMessage = viewModel.message else { return }
-        emailView.loadWebView(with: emailMessage)
+        emailView.update(text: emailMessage, type: viewModel.messageType)
+        emailViewHeight.constant = ALKMyEmailCell.emailHeight(viewModel: viewModel, width: maxWidth)
         timeLabel.text = viewModel.time
 
         // Set read status
@@ -83,16 +84,17 @@ open class ALKMyEmailCell: UITableViewCell {
         }
     }
 
-    func updateHeight(_ height: CGFloat?) {
-        emailView.updateHeight(height)
-        emailViewHeight.constant = ALKEmailView.rowHeight(height)
-    }
-
-    class func rowHeight(viewModel: ALKMessageViewModel, height: CGFloat?) -> CGFloat {
+    class func rowHeight(viewModel: ALKMessageViewModel, maxWidth: CGFloat) -> CGFloat {
         var totalHeight: CGFloat = 0
         totalHeight += Padding.TimeLabel.height + Padding.TimeLabel.top  /// time height
-        totalHeight += ALKEmailView.rowHeight(height)
+        totalHeight += emailHeight(viewModel: viewModel, width: maxWidth)
         return totalHeight
+    }
+
+    private class func emailHeight(viewModel: ALKMessageViewModel, width: CGFloat) -> CGFloat {
+        guard let message = viewModel.message else { return 0 }
+        let emailWidth = width - (Padding.EmailView.trailing + Padding.EmailView.leading)
+        return ALKEmailView.height(text: message, maxWidth: emailWidth, type: viewModel.messageType)
     }
 
     // MARK: - Private helper methods
