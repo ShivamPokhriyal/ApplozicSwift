@@ -64,7 +64,7 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
 
     //MQTT connection retry
     fileprivate var mqttRetryCount = 0
-    fileprivate var maxMqttRetryCount = 3
+    fileprivate let maxMqttRetryCount = 3
 
     fileprivate let audioPlayer = ALKAudioPlayer()
 
@@ -1794,10 +1794,11 @@ extension ALKConversationViewController: ALMQTTConversationDelegate {
     }
 
     public func mqttConnectionClosed() {
-        if viewModel.isOpenGroup &&  mqttRetryCount < maxMqttRetryCount {
+        if viewModel.isOpenGroup && mqttRetryCount < maxMqttRetryCount {
             subscribeChannelToMqtt()
         }
-        NSLog("MQTT connection closed")
+        print("ALKConversationVC mqtt connection closed.")
+        alMqttConversationService.retryConnection()
     }
 
     public func reloadData(forUserBlockNotification userId: String!, andBlockFlag flag: Bool) {

@@ -475,7 +475,8 @@ extension ALKConversationListViewController: ALMQTTConversationDelegate {
     }
 
     open func mqttConnectionClosed() {
-        NSLog("MQTT connection closed")
+        print("ALKConversationListVC mqtt connection closed.")
+        alMqttConversationService.retryConnection()
     }
 }
 
