@@ -33,6 +33,20 @@ open class ALKFriendGenericCardCell: ALKGenericCardBaseCell {
         super.update(viewModel: viewModel, width: width)
     }
 
+    open override func draw(_ rect: CGRect) {
+        super.draw(rect)
+        guard UIApplication.shared.userInterfaceLayoutDirection == .rightToLeft else {
+            return
+        }
+        scrollToBeginning()
+    }
+
+    private func scrollToBeginning() {
+        guard collectionView.numberOfItems(inSection: 0) > 0 else { return }
+        let indexPath = IndexPath(item: 0, section: 0)
+        collectionView.scrollToItem(at: indexPath, at: .left, animated: false)
+    }
+
     override func setupViews() {
         setupCollectionView()
 
