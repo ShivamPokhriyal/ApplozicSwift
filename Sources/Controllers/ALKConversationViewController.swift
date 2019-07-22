@@ -967,7 +967,7 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
         return contact.getDisplayName()
     }
 
-    fileprivate func subscribeChannelToMqtt() {
+    public func subscribeChannelToMqtt() {
         let channelService = ALChannelService()
         if viewModel.isGroup, let groupId = viewModel.channelKey, !channelService.isChannelLeft(groupId) && !ALChannelService.isChannelDeleted(groupId) {
             if !viewModel.isOpenGroup {

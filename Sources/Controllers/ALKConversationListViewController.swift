@@ -370,6 +370,9 @@ extension ALKConversationListViewController: ALKConversationListViewModelDelegat
 extension ALKConversationListViewController: ALMQTTConversationDelegate {
 
     open func mqttDidConnected() {
+        if let viewController = self.navigationController?.visibleViewController as? ALKConversationViewController {
+            viewController.subscribeChannelToMqtt()
+        }
         print("MQTT did connected")
     }
 
