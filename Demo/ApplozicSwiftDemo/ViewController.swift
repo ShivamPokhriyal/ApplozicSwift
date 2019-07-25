@@ -27,11 +27,15 @@ class ViewController: UIViewController {
 
 
     @IBAction func logoutAction(_ sender: UIButton) {
-        let registerUserClientService: ALRegisterUserClientService = ALRegisterUserClientService()
-        registerUserClientService.logout { (response, error) in
-
-        }
-        self.dismiss(animated: false, completion: nil)
+//        let registerUserClientService: ALRegisterUserClientService = ALRegisterUserClientService()
+//        registerUserClientService.logout { (response, error) in
+//
+//        }
+//        self.dismiss(animated: false, completion: nil)
+        let conversationVC = ALKConversationListViewController(configuration: AppDelegate.config)
+        conversationVC.channelKey = 23208981
+        let nav = ALKBaseNavigationViewController(rootViewController: conversationVC)
+        self.present(nav, animated: false, completion: nil)
     }
 
     @IBAction func launchChatList(_ sender: Any) {

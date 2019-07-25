@@ -33,7 +33,7 @@ open class ALKConversationListViewController: ALKBaseViewController, Localizable
 
     // To check if coming from push notification
     var contactId: String?
-    var channelKey: NSNumber?
+    public var channelKey: NSNumber?
     var conversationId: NSNumber?
 
     var tableView: UITableView

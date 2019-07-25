@@ -655,12 +655,12 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
     }
 
     private func configureChatBar() {
-        if viewModel.isOpenGroup {
-            chatBar.updateMediaViewVisibility(hide: true)
-            chatBar.hideMicButton()
-        } else {
+//        if viewModel.isOpenGroup {
+//            chatBar.updateMediaViewVisibility(hide: true)
+//            chatBar.hideMicButton()
+//        } else {
             chatBar.updateMediaViewVisibility()
-        }
+//        }
     }
 
     // swiftlint:disable:next cyclomatic_complexity function_body_length
@@ -763,31 +763,10 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
                 weakSelf.viewModel.send(voiceMessage: voice as Data, metadata:self?.configuration.messageMetadata)
 
             case .startVideoRecord:
-                if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                    AVCaptureDevice.requestAccess(for: AVMediaType.video, completionHandler: {
-                        granted in
-                        DispatchQueue.main.async {
-                            if granted {
-                                let imagePicker = UIImagePickerController()
-                                imagePicker.delegate = self
-                                imagePicker.allowsEditing = true
-                                imagePicker.sourceType = .camera
-                                imagePicker.mediaTypes = [kUTTypeMovie as String]
-                                UIViewController.topViewController()?.present(imagePicker, animated: false, completion: nil)
-                            } else {
-                                let msg = weakSelf.localizedString(
-                                    forKey: "EnableCameraPermissionMessage",
-                                    withDefaultValue: SystemMessage.Camera.cameraPermission,
-                                    fileName: weakSelf.localizedStringFileName)
-                                ALUtilityClass.permissionPopUp(withMessage: msg, andViewController: self)
-                            }
-                        }
-                    })
-                } else {
-                    let msg = weakSelf.localizedString(forKey: "CameraNotAvailableMessage", withDefaultValue: SystemMessage.Camera.CamNotAvailable, fileName: weakSelf.localizedStringFileName)
-                    let title = weakSelf.localizedString(forKey: "CameraNotAvailableTitle", withDefaultValue: SystemMessage.Camera.camNotAvailableTitle, fileName: weakSelf.localizedStringFileName)
-                    ALUtilityClass.showAlertMessage(msg, andTitle: title)
-                }
+                let _vc = UIDocumentPickerViewController(documentTypes: ["public.content"], in: UIDocumentPickerMode.import)
+                _vc.delegate = weakSelf
+                weakSelf.present(_vc, animated: false, completion: nil)
+                break
             case .showImagePicker:
                 guard let vc = ALKCustomPickerViewController.makeInstanceWith(delegate: weakSelf, and: weakSelf.configuration)
                     else {
@@ -1932,5 +1911,34 @@ extension ALKConversationViewController: AttachmentDelegate {
             currentIndex: currentIndex,
             localizedStringFileName: localizedStringFileName)
         self.present(nav, animated: true, completion: nil)
+    }
+}
+
+extension ALKConversationViewController: UIDocumentPickerDelegate {
+
+    public func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentAt url: URL) {
+
+        let (message, indexPath) = self.viewModel.send(fileURL: url, metadata: self.configuration.messageMetadata)
+        guard message != nil, let newIndexPath = indexPath else { return }
+        //        DispatchQueue.main.async {
+        self.tableView.beginUpdates()
+        self.tableView.insertSections(IndexSet(integer: newIndexPath.section), with: .automatic)
+        self.tableView.endUpdates()
+        self.tableView.scrollToBottom(animated: false)
+        //        }
+        guard let cell = tableView.cellForRow(at: newIndexPath) as? ALKMyDocumentCell else { return }
+        guard ALDataNetworkConnection.checkDataNetworkAvailable() else {
+            let notificationView = ALNotificationView()
+            notificationView.noDataConnectionNotificationView()
+            return
+        }
+        viewModel.uploadFile(view: cell, indexPath: newIndexPath)
+    }
+
+    @available(iOS 11.0, *)
+    public func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        for url in urls {
+            self.documentPicker(controller, didPickDocumentAt: url)
+        }
     }
 }

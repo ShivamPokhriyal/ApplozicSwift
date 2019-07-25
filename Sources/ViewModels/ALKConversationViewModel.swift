@@ -1170,6 +1170,69 @@ open class ALKConversationViewModel: NSObject, Localizable {
         })
     }
 
+    open func uploadFile(view: UIView, indexPath: IndexPath) {
+
+        let alMessage = alMessages[indexPath.section]
+        let clientService = ALMessageClientService()
+        let messageService = ALMessageDBService()
+        let alHandler = ALDBHandler.sharedInstance()
+        var dbMessage: DB_Message?
+        do {
+            dbMessage = try messageService.getMeesageBy(alMessage.msgDBObjectId) as? DB_Message
+        } catch {
+
+        }
+        dbMessage?.inProgress = 1
+        dbMessage?.isUploadFailed = 0
+        do {
+            try alHandler?.managedObjectContext.save()
+        } catch {
+
+        }
+        NSLog("content type: ", alMessage.fileMeta.contentType)
+        NSLog("file path: ", alMessage.imageFilePath)
+        clientService.sendPhoto(forUserInfo: alMessage.dictionary(), withCompletion: {
+            urlStr, error in
+            guard error == nil, let urlStr = urlStr, let url = URL(string: urlStr)   else { return }
+            let task = ALKUploadTask(url: url, fileName: alMessage.fileMeta.name)
+            task.identifier = String(format: "section: %i, row: %i", indexPath.section, indexPath.row)
+            task.contentType = alMessage.fileMeta.contentType
+            task.filePath = alMessage.imageFilePath
+            let downloadManager = ALKHTTPManager()
+            downloadManager.uploadDelegate = view as? ALKHTTPManagerUploadDelegate
+            downloadManager.uploadAttachment(task: task)
+            downloadManager.uploadCompleted = {[weak self] responseDict, task in
+                if task.uploadError == nil && task.completed {
+                    self?.uploadAttachmentCompleted(responseDict: responseDict, indexPath: indexPath)
+                }
+            }
+        })
+    }
+
+    open func send(fileURL: URL, metadata : [AnyHashable : Any]?) -> (ALMessage?, IndexPath?) {
+        print("file is:  ", fileURL)
+        let _url:NSURL = fileURL as NSURL
+        let _docDir = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] as String
+        var _filePath = _docDir + String(format: "/%@.%@", _url.deletingPathExtension!.lastPathComponent, _url.pathExtension!)
+        if FileManager.default.fileExists(atPath: _filePath) {
+            _filePath = _docDir + String(format: "/%@_%f.%@", _url.deletingPathExtension!.lastPathComponent, Date().timeIntervalSince1970 * 1000, _url.pathExtension!)
+        }
+        let _fileData = NSData(contentsOf: fileURL)
+        print("filepath:: \(String(describing: _filePath))")
+        guard _fileData?.write(toFile: _filePath, atomically: false) ?? false, let url = URL(string: _filePath) else { return (nil, nil) }
+        guard let alMessage = processAttachment(
+            filePath: url,
+            text: "",
+            contentType: Int(ALMESSAGE_CONTENT_ATTACHMENT),
+            metadata : metadata) else {
+                return (nil, nil)
+        }
+        self.addToWrapper(message: alMessage)
+        return (alMessage, IndexPath(row: 0, section: self.messageModels.count-1))
+    }
+
+
+
     // MARK: - Private Methods
 
     private func updateGroupInfo(
