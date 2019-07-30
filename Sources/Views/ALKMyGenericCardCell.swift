@@ -57,20 +57,6 @@ open class ALKMyGenericCardCell: ALKGenericCardBaseCell {
         return cardHeight + messageHeight + 10 // Extra padding below view. Change this for club/unclub
     }
 
-    open override func draw(_ rect: CGRect) {
-        super.draw(rect)
-        guard UIApplication.shared.userInterfaceLayoutDirection == .rightToLeft else {
-            return
-        }
-        scrollToBeginning()
-    }
-
-    private func scrollToBeginning() {
-        guard collectionView.numberOfItems(inSection: 0) > 0 else { return }
-        let indexPath = IndexPath(item: 0, section: 0)
-        collectionView.scrollToItem(at: indexPath, at: .left, animated: false)
-    }
-
     private func setupCollectionView() {
         let layout: TopRightAlignedFlowLayout = TopRightAlignedFlowLayout()
         layout.minimumInteritemSpacing = 10
@@ -98,6 +84,20 @@ open class ALKGenericCardBaseCell: ALKChatBaseCell<ALKMessageViewModel> {
         collectionView.reloadData()
         let collectionViewHeight = ALKGenericCardCollectionView.rowHeightFor(message:viewModel, width:width)
         collectionView.constraint(withIdentifier: ConstraintIdentifier.collectionView.rawValue)?.constant = collectionViewHeight
+    }
+
+    open override func draw(_ rect: CGRect) {
+        super.draw(rect)
+        guard UIApplication.shared.userInterfaceLayoutDirection == .rightToLeft else {
+            return
+        }
+        scrollToBeginning()
+    }
+
+    private func scrollToBeginning() {
+        guard collectionView.numberOfItems(inSection: 0) > 0 else { return }
+        let indexPath = IndexPath(item: 0, section: 0)
+        collectionView.scrollToItem(at: indexPath, at: .left, animated: false)
     }
 
     public class func cardHeightFor(message: ALKMessageViewModel, width: CGFloat) -> CGFloat {

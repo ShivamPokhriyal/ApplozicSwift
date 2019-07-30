@@ -137,7 +137,7 @@ open class ALKAudioRecorderView: UIView, Localizable {
 
         recordingView.leadingAnchor.constraint(equalTo: redDot.leadingAnchor, constant: 20).isActive = true
         recordingView.centerYAnchor.constraint(equalTo: self.centerYAnchor).isActive = true
-        recordingView.trailingAnchor.constraint(lessThanOrEqualTo: self.trailingAnchor).isActive = true
+        recordingView.widthAnchor.constraint(equalToConstant: 60).isActive = true
 
         slideView.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -20).isActive = true
         slideView.centerYAnchor.constraint(equalTo: self.centerYAnchor).isActive = true
@@ -158,15 +158,10 @@ open class ALKAudioRecorderView: UIView, Localizable {
         redDot.backgroundColor = UIColor(red: 255, green: 14, blue: 0)
         recordingValue.text = "00:00"
 
-        /// Required because stack view frame is zero sometimes.
-        setNeedsLayout()
-        layoutIfNeeded()
-
         previousGestureLocation = 0.0
 
         if UIApplication.shared.userInterfaceLayoutDirection == .rightToLeft {
             slideToCancelStartLocation = slideView.frame.origin.x
-            self.convert(CGPoint(x: 0, y: 0), to: recordingView)
             recordingViewStartLocation = recordingView.frame.origin.x - 10.0
             redDotStartLocation = redDot.frame.origin.x - 5.0
         } else {
@@ -241,13 +236,12 @@ open class ALKAudioRecorderView: UIView, Localizable {
         if newPos < slideToCancelStartLocation {
             return
         }
-        let slidePos = (newPos + slideView.bounds.size.width)
-
-        if slidePos >= recordingViewStartLocation,
+        let slideViewEnd = slideView.frame.origin.x + slideView.frame.size.width
+        if slideViewEnd >= recordingViewStartLocation,
             redDot.frame.origin.x + (location.x - previousGestureLocation) >= redDotStartLocation {
             recordingView.frame.origin.x += (location.x - previousGestureLocation)
             redDot.frame.origin.x += (location.x - previousGestureLocation)
-            if redDot.frame.origin.x >= (self.frame.width) {
+            if recordingView.frame.origin.x + recordingView.frame.size.width >= redDotStartLocation + 30 {
                 delegate.cancelAudioRecording()
             }
         }
