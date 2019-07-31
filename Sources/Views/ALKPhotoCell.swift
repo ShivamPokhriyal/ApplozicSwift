@@ -10,6 +10,7 @@ import Applozic
 import Foundation
 import Kingfisher
 import UIKit
+import SDWebImage
 
 // MARK: - ALKPhotoCell
 
@@ -63,7 +64,21 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
         return button
     }()
 
-    fileprivate let activityIndicator = UIActivityIndicatorView(style: UIActivityIndicatorView.Style.gray)
+    fileprivate let progressIndicator: KDCircularProgress = {
+        let view = KDCircularProgress(frame: .zero)
+        view.startAngle = -90
+        view.clockwise = true
+        return view
+    }()
+
+    let cancelButton: UIButton = {
+        let button = UIButton(type: .custom)
+        let image = UIImage(named: "close", in: Bundle.applozic, compatibleWith: nil)
+        button.setImage(image, for: .normal)
+        button.backgroundColor = .clear
+        button.isHidden = true
+        return button
+    }()
 
     var captionLabel: UILabel = {
         let label = UILabel()
@@ -93,17 +108,18 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
     var url: URL?
     enum State {
         case upload(filePath: String)
-        case uploading(filePath: String)
+        case uploading(progress: Double)
         case uploaded
         case download
-        case downloading
+        case downloading(progress: Double)
         case downloaded(filePath: String)
     }
 
     var uploadTapped: ((Bool) -> Void)?
     var uploadCompleted: ((_ responseDict: Any?) -> Void)?
 
-    var downloadTapped: ((Bool) -> Void)?
+    var downloadTapped:((Bool) ->Void)?
+    var cancelTapped:(() -> Void)?
 
     class func topPadding() -> CGFloat {
         return 12
@@ -132,7 +148,6 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
 
     override func update(viewModel: ALKMessageViewModel) {
         self.viewModel = viewModel
-        activityIndicator.color = .black
         print("Update ViewModel filePath:: %@", viewModel.filePath ?? "")
         if viewModel.isMyMessage {
             if viewModel.isSent || viewModel.isAllRead || viewModel.isAllReceived {
@@ -196,7 +211,8 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
         singleTap.numberOfTapsRequired = 1
         frontView.addGestureRecognizer(singleTap)
 
-        downloadButton.addTarget(self, action: #selector(ALKPhotoCell.downloadButtonAction(_:)), for: .touchUpInside)
+        downloadButton.addTarget(self, action: #selector(buttonAction(_:)), for: .touchUpInside)
+        cancelButton.addTarget(self, action: #selector(buttonAction(_:)), for: .touchUpInside)
         contentView.addViewsForAutolayout(views:
             [frontView,
              photoView,
@@ -206,12 +222,14 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
              captionLabel,
              uploadButton,
              downloadButton,
-             activityIndicator])
+             progressIndicator,
+             cancelButton])
         contentView.bringSubviewToFront(photoView)
         contentView.bringSubviewToFront(frontView)
         contentView.bringSubviewToFront(downloadButton)
         contentView.bringSubviewToFront(uploadButton)
-        contentView.bringSubviewToFront(activityIndicator)
+        contentView.bringSubviewToFront(progressIndicator)
+        contentView.bringSubviewToFront(cancelButton)
 
         frontView.topAnchor.constraint(equalTo: bubbleView.topAnchor).isActive = true
         frontView.bottomAnchor.constraint(equalTo: bubbleView.bottomAnchor).isActive = true
@@ -224,10 +242,15 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
         bubbleView.rightAnchor.constraint(equalTo: photoView.rightAnchor).isActive = true
 
         fileSizeLabel.topAnchor.constraint(equalTo: bubbleView.bottomAnchor, constant: 2).isActive = true
-        activityIndicator.heightAnchor.constraint(equalToConstant: 40).isActive = true
-        activityIndicator.widthAnchor.constraint(equalToConstant: 50).isActive = true
-        activityIndicator.centerXAnchor.constraint(equalTo: photoView.centerXAnchor).isActive = true
-        activityIndicator.centerYAnchor.constraint(equalTo: photoView.centerYAnchor).isActive = true
+        progressIndicator.heightAnchor.constraint(equalToConstant: 60).isActive = true
+        progressIndicator.widthAnchor.constraint(equalToConstant: 60).isActive = true
+        progressIndicator.centerXAnchor.constraint(equalTo: photoView.centerXAnchor).isActive = true
+        progressIndicator.centerYAnchor.constraint(equalTo: photoView.centerYAnchor).isActive = true
+
+        cancelButton.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        cancelButton.widthAnchor.constraint(equalToConstant: 30).isActive = true
+        cancelButton.centerXAnchor.constraint(equalTo: progressIndicator.centerXAnchor).isActive = true
+        cancelButton.centerYAnchor.constraint(equalTo: progressIndicator.centerYAnchor).isActive = true
 
         uploadButton.centerXAnchor.constraint(equalTo: photoView.centerXAnchor).isActive = true
         uploadButton.centerYAnchor.constraint(equalTo: photoView.centerYAnchor).isActive = true
@@ -258,8 +281,23 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
         }
     }
 
-    @objc private func downloadButtonAction(_: UIButton) {
-        downloadTapped?(true)
+    @objc private func buttonAction(_ selector: UIButton) {
+        switch selector {
+        case downloadButton:
+            downloadTapped?(true)
+        case cancelButton:
+            guard let viewModel = viewModel else { return }
+            if SessionQueue.shared.cancelSession(withIdentifier: viewModel.identifier) {
+                if let filePath = viewModel.filePath, !filePath.isEmpty {
+                    updateView(for: .upload(filePath: filePath))
+                } else {
+                    updateView(for: .download)
+                }
+            }
+        default:
+            print("Do nothing")
+        }
+
     }
 
     func updateView(for state: State) {
@@ -272,40 +310,38 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
         switch state {
         case let .upload(filePath):
             frontView.isUserInteractionEnabled = false
-            activityIndicator.isHidden = true
+            progressIndicator.isHidden = true
+            cancelButton.isHidden = true
             downloadButton.isHidden = true
             let docDirPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             let path = docDirPath.appendingPathComponent(filePath)
             setPhotoViewImageFromFileURL(path)
             uploadButton.isHidden = false
         case .uploaded:
-            if activityIndicator.isAnimating {
-                activityIndicator.stopAnimating()
-            }
             frontView.isUserInteractionEnabled = true
             uploadButton.isHidden = true
-            activityIndicator.isHidden = true
+            progressIndicator.isHidden = true
+            cancelButton.isHidden = true
             downloadButton.isHidden = true
-        case .uploading:
+        case .uploading(let progress):
             uploadButton.isHidden = true
             frontView.isUserInteractionEnabled = false
-            activityIndicator.isHidden = false
-            if !activityIndicator.isAnimating {
-                activityIndicator.startAnimating()
-            }
+            progressIndicator.isHidden = false
+            cancelButton.isHidden = false
+            progressIndicator.angle = progress
             downloadButton.isHidden = true
         case .download:
             downloadButton.isHidden = false
             frontView.isUserInteractionEnabled = false
-            activityIndicator.isHidden = true
+            progressIndicator.isHidden = true
+            cancelButton.isHidden = true
             uploadButton.isHidden = true
             loadThumbnail()
-        case .downloading:
+        case .downloading(let progress):
             uploadButton.isHidden = true
-            activityIndicator.isHidden = false
-            if !activityIndicator.isAnimating {
-                activityIndicator.startAnimating()
-            }
+            progressIndicator.isHidden = false
+            progressIndicator.angle = progress
+            cancelButton.isHidden = false
             downloadButton.isHidden = true
             frontView.isUserInteractionEnabled = false
         case let .downloaded(filePath):
@@ -321,7 +357,8 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
             setPhotoViewImageFromFileURL(path)
             frontView.isUserInteractionEnabled = true
             uploadButton.isHidden = true
-            activityIndicator.isHidden = true
+            progressIndicator.isHidden = true
+            cancelButton.isHidden = true
             downloadButton.isHidden = true
         }
     }
@@ -398,8 +435,7 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
     }
 
     func setPhotoViewImageFromFileURL(_ fileURL: URL) {
-        let provider = LocalFileImageDataProvider(fileURL: fileURL)
-        photoView.kf.setImage(with: provider)
+        photoView.sd_setImage(with: fileURL, placeholderImage: nil, options: SDWebImageOptions.refreshCached, context: nil)
     }
 
     func menuReport(_: Any) {
@@ -412,7 +448,8 @@ extension ALKPhotoCell: ALKHTTPManagerUploadDelegate {
         NSLog("VIDEO CELL DATA UPDATED AND FILEPATH IS: %@", viewModel?.filePath ?? "")
         DispatchQueue.main.async {
             print("task filepath:: ", task.filePath ?? "")
-            self.updateView(for: .uploading(filePath: task.filePath ?? ""))
+            let progress = task.totalBytesUploaded.degree(outOf: task.totalBytesExpectedToUpload)
+            self.updateView(for: .uploading(progress: progress))
         }
     }
 
@@ -439,8 +476,9 @@ extension ALKPhotoCell: ALKHTTPManagerDownloadDelegate {
         else {
             return
         }
+        let progress = task.totalBytesDownloaded.degree(outOf: task.totalBytesExpectedToDownload)
         DispatchQueue.main.async {
-            self.updateView(for: .downloading)
+            self.updateView(for: .downloading(progress: progress))
         }
     }
 

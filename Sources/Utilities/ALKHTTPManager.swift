@@ -37,6 +37,7 @@ struct ThumbnailIdentifier {
 }
 
 class SessionQueue {
+    
     public static let shared = SessionQueue()
     private var queue = [URLSession]()
 
@@ -63,6 +64,18 @@ class SessionQueue {
             let config = session.configuration
             guard let id = config.identifier else { continue }
             if id.contains(withIdentifier) {
+                return true
+            }
+        }
+        return false
+    }
+
+    public func cancelSession(withIdentifier: String) -> Bool {
+        for session in queue {
+            let config = session.configuration
+            guard let id = config.identifier else { continue }
+            if id.contains(withIdentifier) {
+                session.invalidateAndCancel()
                 return true
             }
         }
@@ -180,7 +193,7 @@ class ALKHTTPManager: NSObject {
             downloadDelegate?.dataDownloadingFinished(task: downloadTask)
         } else {
             DispatchQueue.global(qos: .default).async {
-                let configuration = URLSessionConfiguration.default
+                let configuration = URLSessionConfiguration.background(withIdentifier: identifier)
                 guard !urlString.isEmpty, let url = URL(string: urlString) else { return }
                 let session = URLSession(configuration: configuration, delegate:self, delegateQueue: nil)
                 self.startSession(session, request: URLRequest(url: url))
@@ -302,11 +315,10 @@ extension ALKHTTPManager: URLSessionDataDelegate {
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-
         SessionQueue.shared.removeSession(session)
+        ALKHTTPManager.semaphore.signal()
         guard let downloadTask = self.downloadTask, let fileName = downloadTask.fileName, let identifier = downloadTask.identifier else { return }
         guard error == nil else {
-            ALKHTTPManager.semaphore.signal()
             DispatchQueue.main.async {
                 downloadTask.filePath = ""
                 downloadTask.completed = true
@@ -345,7 +357,6 @@ extension ALKHTTPManager: URLSessionDataDelegate {
             self.downloadDelegate?.dataDownloadingFinished(task: downloadTask)
         }
         buffer.resetBytes(in: NSRange(location: 0, length: buffer.length))
-        ALKHTTPManager.semaphore.signal()
     }
 
     func urlSession(_: URLSession, task _: URLSessionTask, didSendBodyData _: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {

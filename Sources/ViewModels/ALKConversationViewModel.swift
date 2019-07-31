@@ -925,7 +925,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
             urlStr, error in
             guard error == nil, let urlStr = urlStr, let url = URL(string: urlStr) else { return }
             let task = ALKUploadTask(url: url, fileName: alMessage.fileMeta.name)
-            task.identifier = String(format: "section: %i, row: %i", indexPath.section, indexPath.row)
+            task.identifier = alMessage.identifier
             task.contentType = alMessage.fileMeta.contentType
             task.filePath = alMessage.imageFilePath
             let downloadManager = ALKHTTPManager()
@@ -958,7 +958,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
             urlStr, error in
             guard error == nil, let urlStr = urlStr, let url = URL(string: urlStr) else { return }
             let task = ALKUploadTask(url: url, fileName: alMessage.fileMeta.name)
-            task.identifier = String(format: "section: %i, row: %i", indexPath.section, indexPath.row)
+            task.identifier = alMessage.identifier
             task.contentType = alMessage.fileMeta.contentType
             task.filePath = alMessage.imageFilePath
             let downloadManager = ALKHTTPManager()
