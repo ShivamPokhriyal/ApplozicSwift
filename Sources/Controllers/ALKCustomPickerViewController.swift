@@ -8,6 +8,7 @@
 
 import Photos
 import UIKit
+import Applozic
 
 protocol ALKCustomPickerDelegate: AnyObject {
     func filesSelected(images: [UIImage], videos: [String])
@@ -234,8 +235,10 @@ class ALKCustomPickerViewController: ALKBaseViewController, Localizable {
                         group.leave()
                     }
                 } else {
-                    PHCachingImageManager.default().requestImageData(for: asset, options: nil) { imageData, _, _, _ in
-                        guard let imageData = imageData, let image = UIImage(data: imageData) else {
+                    PHCachingImageManager.default().requestImageData(for: asset, options:nil) { (imageData, _, _, _) in
+                        guard let imageData = imageData,
+                            let data = ALUtilityClass.compressImage(imageData),
+                            let image = UIImage(data: data) else {
                             error = true
                             group.leave()
                             return

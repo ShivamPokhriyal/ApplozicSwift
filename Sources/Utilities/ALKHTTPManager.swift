@@ -36,7 +36,43 @@ struct ThumbnailIdentifier {
     }
 }
 
+class SessionQueue {
+    public static let shared = SessionQueue()
+    private var queue = [URLSession]()
+
+    private init() { }
+
+    public func getAllSessions() -> [URLSession] {
+        return queue
+    }
+
+    public func addSession(_ session: URLSession) {
+        queue.append(session)
+    }
+
+    public func containsSession(_ session: URLSession) -> Bool {
+        return queue.contains(session)
+    }
+
+    public func removeSession(_ session: URLSession) {
+        queue.remove(object: session)
+    }
+
+    public func containsSession(withIdentifier: String) -> Bool {
+        for session in queue {
+            let config = session.configuration
+            guard let id = config.identifier else { continue }
+            if id.contains(withIdentifier) {
+                return true
+            }
+        }
+        return false
+    }
+
+}
+
 class ALKHTTPManager: NSObject {
+    static let semaphore = DispatchSemaphore(value: 2)
     static let shared = ALKHTTPManager()
     weak var downloadDelegate: ALKHTTPManagerDownloadDelegate?
     weak var uploadDelegate: ALKHTTPManagerUploadDelegate?
@@ -93,6 +129,10 @@ class ALKHTTPManager: NSObject {
     func downloadAttachment(task: ALKDownloadTask) {
         downloadTask = task
         guard let urlString = task.urlString, let fileName = task.fileName, let identifier = task.identifier else { return }
+        guard !SessionQueue.shared.containsSession(withIdentifier: identifier) else {
+            print("Downloading already in queue")
+            return
+        }
         let componentsArray = fileName.components(separatedBy: ".")
         let fileExtension = componentsArray.last
         let filePath = getFilePath(using: identifier, with: fileExtension!)
@@ -105,14 +145,15 @@ class ALKHTTPManager: NSObject {
             downloadCompleted?(downloadTask)
             downloadDelegate?.dataDownloadingFinished(task: downloadTask)
         } else {
-            let configuration = URLSessionConfiguration.default
-            guard !urlString.isEmpty else { return }
-            let serviceEnabled = ALApplozicSettings.isS3StorageServiceEnabled() || ALApplozicSettings.isGoogleCloudServiceEnabled()
-            guard let urlRequest = serviceEnabled ? ALRequestHandler.createGETRequest(withUrlStringWithoutHeader: urlString, paramString: nil) :
-                ALRequestHandler.createGETRequest(withUrlString: urlString, paramString: nil) else { return }
-            session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
-            let dataTask = session?.dataTask(with: urlRequest as URLRequest)
-            dataTask?.resume()
+            DispatchQueue.global(qos: .default).async {
+                let configuration = URLSessionConfiguration.background(withIdentifier: identifier)
+                guard !urlString.isEmpty else { return }
+                let serviceEnabled = ALApplozicSettings.isS3StorageServiceEnabled() || ALApplozicSettings.isGoogleCloudServiceEnabled()
+                guard let urlRequest = serviceEnabled ? ALRequestHandler.createGETRequest(withUrlStringWithoutHeader: urlString, paramString: nil) :
+                    ALRequestHandler.createGETRequest(withUrlString: urlString, paramString: nil) else { return }
+                let session = URLSession(configuration: configuration, delegate:self, delegateQueue: nil)
+                self.startSession(session, request: urlRequest as URLRequest)
+            }
         }
     }
 
@@ -122,6 +163,10 @@ class ALKHTTPManager: NSObject {
     func downloadImage(task: ALKDownloadTask) {
         downloadTask = task
         guard let urlString = task.urlString, let fileName = task.fileName, let identifier = task.identifier else { return }
+        guard !SessionQueue.shared.containsSession(withIdentifier: identifier) else {
+            print("Image downloading already in queue")
+            return
+        }
         let componentsArray = fileName.components(separatedBy: ".")
         let fileExtension = componentsArray.last
         let filePath = getFilePath(using: identifier, with: fileExtension!)
@@ -134,46 +179,65 @@ class ALKHTTPManager: NSObject {
             downloadCompleted?(downloadTask)
             downloadDelegate?.dataDownloadingFinished(task: downloadTask)
         } else {
-            let configuration = URLSessionConfiguration.default
-            guard !urlString.isEmpty, let url = URL(string: urlString) else { return }
-            session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
-            let dataTask = session?.dataTask(with: URLRequest(url: url))
-            dataTask?.resume()
+            DispatchQueue.global(qos: .default).async {
+                let configuration = URLSessionConfiguration.default
+                guard !urlString.isEmpty, let url = URL(string: urlString) else { return }
+                let session = URLSession(configuration: configuration, delegate:self, delegateQueue: nil)
+                self.startSession(session, request: URLRequest(url: url))
+            }
         }
     }
 
     func uploadAttachment(task: ALKUploadTask) {
-        uploadTask = task
+        guard let identifier = task.identifier else { return }
+        self.uploadTask = task
         let docDirPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let imageFilePath = task.filePath
         let filePath = docDirPath.appendingPathComponent(imageFilePath ?? "")
 
         guard var request = ALRequestHandler.createPOSTRequest(withUrlString: task.url?.description, paramString: nil) as URLRequest? else { return }
         if FileManager.default.fileExists(atPath: filePath.path) {
-            let boundary = "------ApplogicBoundary4QuqLuM1cE5lMwCy"
-            let contentType = String(format: "multipart/form-data; boundary=%@", boundary)
-            request.setValue(contentType, forHTTPHeaderField: "Content-Type")
-            var body = Data()
-            let fileParamConstant = ALApplozicSettings.isS3StorageServiceEnabled() ? Constants.paramForS3Storage : Constants.paramForDefaultStorage
-            let imageData = NSData(contentsOfFile: filePath.path)
+            DispatchQueue.global(qos: .default).async {
+                let boundary = "------ApplogicBoundary4QuqLuM1cE5lMwCy"
+                let contentType = String(format: "multipart/form-data; boundary=%@", boundary)
+                request.setValue(contentType, forHTTPHeaderField: "Content-Type")
+                var body = Data()
+                let fileParamConstant = ALApplozicSettings.isS3StorageServiceEnabled() ? Constants.paramForS3Storage : Constants.paramForDefaultStorage
+                let imageData = NSData(contentsOfFile: filePath.path)
 
-            if let data = imageData as Data? {
-                print("data present")
-                body.append(String(format: "--%@\r\n", boundary).data(using: .utf8)!)
-                body.append(String(format: "Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"\r\n", fileParamConstant, task.fileName ?? "").data(using: .utf8)!)
-                body.append(String(format: "Content-Type:%@\r\n\r\n", task.contentType ?? "").data(using: .utf8)!)
-                body.append(data)
-                body.append(String(format: "\r\n").data(using: .utf8)!)
+                if let data = imageData as Data? {
+                    print("data present")
+                    body.append(String(format: "--%@\r\n", boundary).data(using: .utf8)!)
+                    body.append(String(format: "Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"\r\n", fileParamConstant,task.fileName ?? "").data(using: .utf8)!)
+                    body.append(String(format: "Content-Type:%@\r\n\r\n", task.contentType ?? "").data(using: .utf8)!)
+                    body.append(data)
+                    body.append(String(format: "\r\n").data(using: .utf8)!)
+                }
+
+                body.append(String(format: "--%@--\r\n", boundary).data(using: .utf8)!)
+                request.httpBody = body
+                request.url = task.url
+
+                guard !SessionQueue.shared.containsSession(withIdentifier: identifier) else {
+                    print("Session upload already in queue")
+                    return
+                }
+                let configuration = URLSessionConfiguration.background(withIdentifier: identifier)
+                let session = URLSession(configuration: configuration, delegate:self, delegateQueue: nil)
+                self.startSession(session, request: request)
             }
-
-            body.append(String(format: "--%@--\r\n", boundary).data(using: .utf8)!)
-            request.httpBody = body
-            request.url = task.url
-            let configuration = URLSessionConfiguration.default
-            session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
-            let dataTask = session?.dataTask(with: request)
-            dataTask?.resume()
         }
+    }
+
+    private func startSession(_ session: URLSession, request: URLRequest) {
+        SessionQueue.shared.addSession(session)
+        ALKHTTPManager.semaphore.wait()
+        guard SessionQueue.shared.containsSession(session) else {
+            ALKHTTPManager.semaphore.signal()
+            return
+        }
+        let task = session.dataTask(with: request)
+        task.resume()
     }
 
     fileprivate func getFilePath(using identifier: String, with fileExtension: String) -> String {
@@ -233,12 +297,16 @@ extension ALKHTTPManager: URLSessionDataDelegate {
                     self.uploadDelegate?.dataUploadingFinished(task: uploadTask)
                 }
             }
+            ALKHTTPManager.semaphore.signal()
         }
     }
 
-    func urlSession(_: URLSession, task _: URLSessionTask, didCompleteWithError error: Error?) {
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+
+        SessionQueue.shared.removeSession(session)
         guard let downloadTask = self.downloadTask, let fileName = downloadTask.fileName, let identifier = downloadTask.identifier else { return }
         guard error == nil else {
+            ALKHTTPManager.semaphore.signal()
             DispatchQueue.main.async {
                 downloadTask.filePath = ""
                 downloadTask.completed = true
@@ -253,8 +321,22 @@ extension ALKHTTPManager: URLSessionDataDelegate {
         let componentsArray = fileName.components(separatedBy: ".")
         let fileExtension = componentsArray.last
         let filePath = getFilePath(using: identifier, with: fileExtension!)
-        let path = documentsURL.appendingPathComponent(filePath).path
-        buffer.write(toFile: path, atomically: true)
+        let url = documentsURL.appendingPathComponent(filePath)
+        let path = url.path
+
+        if let compressedData = compressData(buffer, for: identifier) {
+            do {
+                try compressedData.write(to: url, options: .atomic)
+            } catch {
+                print("Error while saving compressed data \(error.localizedDescription)")
+                /// Try saving complete data now.
+                buffer.write(toFile: path, atomically: true)
+            }
+        } else {
+            /// This is needed since the attachment data is already downloaded and
+            /// we failed/(don't want) to compress it.
+            buffer.write(toFile: path, atomically: true)
+        }
         DispatchQueue.main.async {
             downloadTask.filePath = filePath
             downloadTask.completed = true
@@ -262,6 +344,8 @@ extension ALKHTTPManager: URLSessionDataDelegate {
             self.downloadCompleted?(downloadTask)
             self.downloadDelegate?.dataDownloadingFinished(task: downloadTask)
         }
+        buffer.resetBytes(in: NSRange(location: 0, length: buffer.length))
+        ALKHTTPManager.semaphore.signal()
     }
 
     func urlSession(_: URLSession, task _: URLSessionTask, didSendBodyData _: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
@@ -274,4 +358,22 @@ extension ALKHTTPManager: URLSessionDataDelegate {
             self.uploadDelegate?.dataUploaded(task: uploadTask)
         }
     }
+
+    private func compressData(_ data: NSData, for identifier: String) -> Data? {
+        let messageKey = ThumbnailIdentifier.removePrefix(from: identifier)
+        /// Compression is required only for image
+        guard
+            let message = ALMessageDBService().getMessageByKey(messageKey),
+            message.fileMeta.contentType.contains("image")
+            else {
+                return nil
+        }
+
+        /// Compress data
+        guard let compressedData = ALUtilityClass.compressImage(data as Data) else {
+            return nil
+        }
+        return compressedData
+    }
+
 }
