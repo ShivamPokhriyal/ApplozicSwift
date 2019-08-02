@@ -235,17 +235,16 @@ class ALKCustomPickerViewController: ALKBaseViewController, Localizable {
                         group.leave()
                     }
                 } else {
-                    PHCachingImageManager.default().requestImageData(for: asset, options:nil) { (imageData, _, _, _) in
-                        guard let imageData = imageData,
-                            let data = ALUtilityClass.compressImage(imageData),
-                            let image = UIImage(data: data) else {
-                            error = true
+                    let options = PHImageRequestOptions()
+                    options.isSynchronous = true
+                    PHCachingImageManager.default().requestImage(for: asset, targetSize: CGSize(width: 1280, height: 720), contentMode: .aspectFill, options: options, resultHandler: { (image, _) in
+                        guard let image = image else {
                             group.leave()
                             return
                         }
                         selectedImages.append(image)
                         group.leave()
-                    }
+                    })
                 }
             }
             group.wait()
