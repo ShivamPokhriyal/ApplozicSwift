@@ -139,7 +139,7 @@ class ALKCustomPickerViewController: ALKBaseViewController, Localizable {
         fileurl = fileurl.standardizedFileURL
 
         let options = PHVideoRequestOptions()
-        options.deliveryMode = .highQualityFormat
+        options.deliveryMode = .mediumQualityFormat
         options.isNetworkAccessAllowed = true
 
         // remove any existing file at that location

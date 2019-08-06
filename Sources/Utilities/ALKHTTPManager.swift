@@ -37,7 +37,7 @@ struct ThumbnailIdentifier {
 }
 
 class SessionQueue {
-    
+
     public static let shared = SessionQueue()
     private var queue = [URLSession]()
 
@@ -93,7 +93,7 @@ class ALKHTTPManager: NSObject {
     var downloadCompleted: ((_ task: ALKDownloadTask) -> Void)?
 
     var length: Int64 = 0
-    var buffer: NSMutableData = NSMutableData()
+    var buffer:NSMutableData! = NSMutableData()
     var session: URLSession?
     var uploadTask: ALKUploadTask?
     var downloadTask: ALKDownloadTask?
@@ -356,7 +356,8 @@ extension ALKHTTPManager: URLSessionDataDelegate {
             self.downloadCompleted?(downloadTask)
             self.downloadDelegate?.dataDownloadingFinished(task: downloadTask)
         }
-        buffer.resetBytes(in: NSRange(location: 0, length: buffer.length))
+        /// Required because it was not being collected by ARC
+        buffer = nil
     }
 
     func urlSession(_: URLSession, task _: URLSessionTask, didSendBodyData _: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {

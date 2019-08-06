@@ -221,17 +221,18 @@ public final class ALKChatCell: MGSwipeTableCell, Localizable {
     public func update(viewModel: ALKChatViewModelProtocol, identity _: ALKIdentityProtocol?, placeholder: UIImage? = nil, disableSwipe: Bool) {
         self.viewModel = viewModel
         let placeHolder = placeholderImage(placeholder, viewModel: viewModel)
+        let options: KingfisherOptionsInfo = [.processor(DownsamplingImageProcessor(size: avatarImageView.frame.size)), .cacheOriginalImage]
 
         if let avatarImage = viewModel.avatarImage {
             if let imgStr = viewModel.avatarGroupImageUrl, let imgURL = URL(string: imgStr) {
                 let resource = ImageResource(downloadURL: imgURL, cacheKey: imgStr)
-                avatarImageView.kf.setImage(with: resource, placeholder: avatarImage)
+                avatarImageView.kf.setImage(with: resource, placeholder: avatarImage, options: options)
             } else {
                 avatarImageView.image = placeHolder
             }
         } else if let avatar = viewModel.avatar {
             let resource = ImageResource(downloadURL: avatar, cacheKey: avatar.absoluteString)
-            avatarImageView.kf.setImage(with: resource, placeholder: placeHolder)
+            avatarImageView.kf.setImage(with: resource, placeholder: placeHolder, options: options)
         } else {
             avatarImageView.image = placeHolder
         }
