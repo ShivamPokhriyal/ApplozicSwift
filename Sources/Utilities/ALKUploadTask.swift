@@ -19,6 +19,7 @@ public class ALKUploadTask {
     public var uploadError: Error?
     public var filePath: String?
     public var identifier: String?
+    public var payloadUrl: URL?
 
     public init(url: URL, fileName: String) {
         self.url = url

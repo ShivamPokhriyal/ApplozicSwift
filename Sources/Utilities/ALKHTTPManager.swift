@@ -76,6 +76,7 @@ class SessionQueue {
             guard let id = config.identifier else { continue }
             if id.contains(withIdentifier) {
                 session.invalidateAndCancel()
+                queue.remove(object: session)
                 return true
             }
         }
@@ -94,7 +95,6 @@ class ALKHTTPManager: NSObject {
 
     var length: Int64 = 0
     var buffer:NSMutableData! = NSMutableData()
-    var session: URLSession?
     var uploadTask: ALKUploadTask?
     var downloadTask: ALKDownloadTask?
 
@@ -201,6 +201,62 @@ class ALKHTTPManager: NSObject {
         }
     }
 
+    func uploadVideo(task: ALKUploadTask) {
+        guard let identifier = task.identifier else { return }
+
+        guard !SessionQueue.shared.containsSession(withIdentifier: identifier) else {
+            print("Session upload already in queue")
+            return
+        }
+        DispatchQueue.global(qos: .default).async {
+            self.uploadTask = task
+            let docDirPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let imageFilePath = task.filePath
+            let fileUrl = docDirPath.appendingPathComponent(imageFilePath ?? "")
+            guard
+                var request = ALRequestHandler.createPOSTRequest(withUrlString: task.url?.description, paramString: nil) as URLRequest?,
+                FileManager.default.fileExists(atPath: fileUrl.path),
+                let payloadUrl = self.buildPayloadFile(videoUrl: fileUrl, fileName: task.fileName ?? "", contentType: task.contentType ?? "")
+            else { return }
+            self.uploadTask?.payloadUrl = payloadUrl
+            let boundary = "------ApplogicBoundary4QuqLuM1cE5lMwCy"
+            let contentType = String(format: "multipart/form-data; boundary=%@", boundary)
+            request.setValue(contentType, forHTTPHeaderField: "Content-Type")
+            request.url = task.url
+            let configuration = URLSessionConfiguration.background(withIdentifier: identifier)
+            let session = URLSession(configuration: configuration, delegate:self, delegateQueue: nil)
+            SessionQueue.shared.addSession(session)
+            ALKHTTPManager.semaphore.wait()
+            guard SessionQueue.shared.containsSession(session) else {
+                ALKHTTPManager.semaphore.signal()
+                try? FileManager.default.removeItem(at: payloadUrl)
+                return
+            }
+            let task = session.uploadTask(with: request, fromFile: payloadUrl)
+            task.resume()
+        }
+    }
+
+    func buildPayloadFile(videoUrl: URL, fileName: String, contentType: String) -> URL? {
+        let fileUrl = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        guard let stream = OutputStream(url: fileUrl, append: false) else {
+            return nil
+        }
+        stream.open()
+        let fileParamConstant = ALApplozicSettings.isS3StorageServiceEnabled() ? Constants.paramForS3Storage : Constants.paramForDefaultStorage
+        let boundary = "------ApplogicBoundary4QuqLuM1cE5lMwCy"
+        stream.write("--\(boundary)\r\n")
+        stream.write("Content-Disposition: form-data; name=\"\(fileParamConstant)\"; filename=\"\(fileName)\"\r\n")
+        stream.write("Content-Type:\(contentType)\r\n\r\n")
+        if stream.append(contentsOf: videoUrl) < 0 {
+            return nil
+        }
+        stream.write("\r\n")
+        stream.write("--\(boundary)--\r\n")
+        stream.close()
+        return fileUrl
+    }
+
     func uploadAttachment(task: ALKUploadTask) {
         guard let identifier = task.identifier else { return }
         self.uploadTask = task
@@ -275,7 +331,7 @@ extension ALKHTTPManager: URLSessionDataDelegate {
         completionHandler(URLSession.ResponseDisposition.allow)
     }
 
-    func urlSession(_: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         if let downloadTask = downloadTask {
             buffer.append(data)
             DispatchQueue.main.async {
@@ -285,38 +341,63 @@ extension ALKHTTPManager: URLSessionDataDelegate {
                 self.downloadDelegate?.dataDownloaded(task: downloadTask)
             }
         } else {
-            guard let response = dataTask.response as? HTTPURLResponse, response.statusCode == 200 else {
-                NSLog("UPLOAD ERROR: %@", dataTask.error.debugDescription)
-                return
-            }
-            guard let uploadTask = self.uploadTask else { return }
-            do {
-                let responseDictionary = try JSONSerialization.jsonObject(with: data)
-                print("success == \(responseDictionary)")
-
-                DispatchQueue.main.async {
-                    uploadTask.completed = true
-                    self.uploadCompleted?(responseDictionary, uploadTask)
-                    self.uploadDelegate?.dataUploadingFinished(task: uploadTask)
-                }
-            } catch {
-                print(error)
-                let responseString = String(data: data, encoding: .utf8)
-                print("responseString = \(String(describing: responseString))")
-                DispatchQueue.main.async {
-                    uploadTask.uploadError = error
-                    uploadTask.completed = true
-                    self.uploadCompleted?(nil, uploadTask)
-                    self.uploadDelegate?.dataUploadingFinished(task: uploadTask)
-                }
-            }
-            ALKHTTPManager.semaphore.signal()
+            SessionQueue.shared.removeSession(session)
+            uploadFinished(data: data, response: dataTask.response, error: dataTask.error)
         }
+    }
+
+    func uploadFinished(data: Data?, response: URLResponse?, error: Error?) {
+        guard let uploadTask = self.uploadTask else { return }
+        if let payloadUrl = uploadTask.payloadUrl {
+            try? FileManager.default.removeItem(at: payloadUrl)
+        }
+        guard let response = response as? HTTPURLResponse, response.statusCode == 200, let data = data else {
+            NSLog("UPLOAD ERROR: \(String(describing: error))")
+            DispatchQueue.main.async {
+                uploadTask.uploadError = error
+                uploadTask.completed = true
+                self.uploadCompleted?(nil, uploadTask)
+                self.uploadDelegate?.dataUploadingFinished(task: uploadTask)
+            }
+            return
+        }
+        do {
+            let responseDictionary = try JSONSerialization.jsonObject(with: data)
+            print("success == \(responseDictionary)")
+
+            DispatchQueue.main.async {
+                uploadTask.completed = true
+                self.uploadCompleted?(responseDictionary, uploadTask)
+                self.uploadDelegate?.dataUploadingFinished(task: uploadTask)
+            }
+        } catch(let error) {
+            print(error)
+            let responseString = String(data: data, encoding: .utf8)
+            print("responseString = \(String(describing: responseString))")
+            DispatchQueue.main.async {
+                uploadTask.uploadError = error
+                uploadTask.completed = true
+                self.uploadCompleted?(nil, uploadTask)
+                self.uploadDelegate?.dataUploadingFinished(task: uploadTask)
+            }
+        }
+        ALKHTTPManager.semaphore.signal()
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         SessionQueue.shared.removeSession(session)
         ALKHTTPManager.semaphore.signal()
+        if let uploadTask = self.uploadTask, let error = error {
+            if let payloadUrl = uploadTask.payloadUrl {
+                try? FileManager.default.removeItem(at: payloadUrl)
+            }
+            DispatchQueue.main.async {
+                uploadTask.uploadError = error
+                uploadTask.completed = true
+                self.uploadCompleted?(nil, uploadTask)
+                self.uploadDelegate?.dataUploadingFinished(task: uploadTask)
+            }
+        }
         guard let downloadTask = self.downloadTask, let fileName = downloadTask.fileName, let identifier = downloadTask.identifier else { return }
         guard error == nil else {
             DispatchQueue.main.async {
@@ -355,9 +436,8 @@ extension ALKHTTPManager: URLSessionDataDelegate {
             downloadTask.isDownloading = false
             self.downloadCompleted?(downloadTask)
             self.downloadDelegate?.dataDownloadingFinished(task: downloadTask)
+            self.buffer = nil
         }
-        /// Required because it was not being collected by ARC
-        buffer = nil
     }
 
     func urlSession(_: URLSession, task _: URLSessionTask, didSendBodyData _: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
@@ -388,4 +468,35 @@ extension ALKHTTPManager: URLSessionDataDelegate {
         return compressedData
     }
 
+}
+
+extension OutputStream {
+    @discardableResult
+    func write(_ string: String) -> Int {
+        guard let data = string.data(using: .utf8) else { return -1 }
+        return data.withUnsafeBytes { (buffer: UnsafePointer<UInt8>) -> Int in
+            write(buffer, maxLength: data.count)
+        }
+    }
+
+    @discardableResult
+    func append(contentsOf url: URL) -> Int {
+        guard let inputStream = InputStream(url: url) else { return -1 }
+        inputStream.open()
+        let bufferSize = 1_024 * 1_024
+        var buffer = [UInt8](repeating: 0, count: bufferSize)
+        var bytes = 0
+        var totalBytes = 0
+        repeat {
+            bytes = inputStream.read(&buffer, maxLength: bufferSize)
+            if bytes > 0 {
+                write(buffer, maxLength: bytes)
+                totalBytes += bytes
+            }
+        } while bytes > 0
+
+        inputStream.close()
+
+        return bytes < 0 ? bytes : totalBytes
+    }
 }

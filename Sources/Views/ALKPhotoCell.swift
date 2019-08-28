@@ -148,24 +148,35 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
 
     override func update(viewModel: ALKMessageViewModel) {
         self.viewModel = viewModel
-        print("Update ViewModel filePath:: %@", viewModel.filePath ?? "")
         if viewModel.isMyMessage {
             if viewModel.isSent || viewModel.isAllRead || viewModel.isAllReceived {
                 if let filePath = viewModel.filePath, !filePath.isEmpty {
                     updateView(for: State.downloaded(filePath: filePath))
                 } else {
-                    updateView(for: State.download)
+                    if SessionQueue.shared.containsSession(withIdentifier: viewModel.identifier) {
+                        updateView(for: State.downloading(progress: 0))
+                    } else {
+                        updateView(for: State.download)
+                    }
                 }
             } else {
                 if let filePath = viewModel.filePath, !filePath.isEmpty {
-                    updateView(for: .upload(filePath: filePath))
+                    if SessionQueue.shared.containsSession(withIdentifier: viewModel.identifier) {
+                        updateView(for: State.uploading(progress: 0))
+                    } else {
+                        updateView(for: .upload(filePath: filePath))
+                    }
                 }
             }
         } else {
             if let filePath = viewModel.filePath, !filePath.isEmpty {
                 updateView(for: State.downloaded(filePath: filePath))
             } else {
-                updateView(for: State.download)
+                if SessionQueue.shared.containsSession(withIdentifier: viewModel.identifier) {
+                    updateView(for: State.downloading(progress: 0))
+                } else {
+                    updateView(for: State.download)
+                }
             }
         }
         timeLabel.text = viewModel.time
@@ -284,6 +295,7 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
     @objc private func buttonAction(_ selector: UIButton) {
         switch selector {
         case downloadButton:
+            updateView(for: .downloading(progress: 0))
             downloadTapped?(true)
         case cancelButton:
             guard let viewModel = viewModel else { return }
@@ -345,13 +357,6 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
             downloadButton.isHidden = true
             frontView.isUserInteractionEnabled = false
         case let .downloaded(filePath):
-            activityIndicator.isHidden = false
-            if !activityIndicator.isAnimating {
-                activityIndicator.startAnimating()
-            }
-            if activityIndicator.isAnimating {
-                activityIndicator.stopAnimating()
-            }
             let docDirPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             let path = docDirPath.appendingPathComponent(filePath)
             setPhotoViewImageFromFileURL(path)
@@ -441,10 +446,24 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
     func menuReport(_: Any) {
         menuAction?(.reportMessage)
     }
+
+    func isCallbackForCurrentCell(_ taskId: String?) -> Bool {
+        guard
+            let messageId = viewModel?.identifier,
+            let taskId = taskId,
+            taskId.contains(messageId)
+            else {
+                return false
+        }
+        return true
+    }
 }
 
 extension ALKPhotoCell: ALKHTTPManagerUploadDelegate {
     func dataUploaded(task: ALKUploadTask) {
+        if !isCallbackForCurrentCell(task.identifier) {
+            return
+        }
         NSLog("VIDEO CELL DATA UPDATED AND FILEPATH IS: %@", viewModel?.filePath ?? "")
         DispatchQueue.main.async {
             print("task filepath:: ", task.filePath ?? "")
@@ -454,6 +473,9 @@ extension ALKPhotoCell: ALKHTTPManagerUploadDelegate {
     }
 
     func dataUploadingFinished(task: ALKUploadTask) {
+        if !isCallbackForCurrentCell(task.identifier) {
+            return
+        }
         NSLog("VIDEO CELL DATA UPLOADED FOR PATH: %@", viewModel?.filePath ?? "")
         if task.uploadError == nil, task.completed == true, task.filePath != nil {
             DispatchQueue.main.async {
@@ -469,6 +491,9 @@ extension ALKPhotoCell: ALKHTTPManagerUploadDelegate {
 
 extension ALKPhotoCell: ALKHTTPManagerDownloadDelegate {
     func dataDownloaded(task: ALKDownloadTask) {
+        if !isCallbackForCurrentCell(task.identifier) {
+            return
+        }
         NSLog("Image Bytes downloaded: %i", task.totalBytesDownloaded)
         guard
             let identifier = task.identifier,
@@ -490,12 +515,16 @@ extension ALKPhotoCell: ALKHTTPManagerDownloadDelegate {
             DispatchQueue.main.async {
                 self.setThumbnail(filePath)
             }
-            updateThumbnailPath(identifier, filePath: filePath)
+            if isCallbackForCurrentCell(task.identifier) {
+                self.updateThumbnailPath(identifier, filePath: filePath)
+            }
             return
         }
         ALMessageDBService().updateDbMessageWith(key: "key", value: identifier, filePath: filePath)
         DispatchQueue.main.async {
-            self.updateView(for: .downloaded(filePath: filePath))
+            if self.isCallbackForCurrentCell(task.identifier) {
+                self.updateView(for: .downloaded(filePath: filePath))
+            }
         }
     }
 }

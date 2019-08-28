@@ -797,9 +797,9 @@ open class ALKConversationViewModel: NSObject, Localizable {
             task.identifier = alMessage.identifier
             task.contentType = alMessage.fileMeta.contentType
             task.filePath = alMessage.imageFilePath
-            downloadManager.uploadAttachment(task: task)
-            downloadManager.uploadCompleted = { [weak self] responseDict, task in
-                if task.uploadError == nil, task.completed {
+            downloadManager.uploadVideo(task: task)
+            downloadManager.uploadCompleted = {[weak self] responseDict, task in
+                if task.uploadError == nil && task.completed {
                     self?.uploadAttachmentCompleted(responseDict: responseDict, indexPath: indexPath)
                 }
             }

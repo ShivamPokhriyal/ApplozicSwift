@@ -254,7 +254,13 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                 cell.uploadTapped = { [weak self]
                     _ in
                     // upload
-                    self?.attachmentViewDidTapUpload(view: cell, indexPath: indexPath)
+//                    self?.attachmentViewDidTapUpload(view: cell, indexPath: indexPath)
+                    guard ALDataNetworkConnection.checkDataNetworkAvailable() else {
+                        let notificationView = ALNotificationView()
+                        notificationView.noDataConnectionNotificationView()
+                        return
+                    }
+                    self?.viewModel.uploadVideo(view: cell, indexPath: indexPath)
                 }
                 cell.uploadCompleted = { [weak self]
                     responseDict in

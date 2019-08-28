@@ -134,16 +134,28 @@ class ALKVideoCell: ALKChatBaseCell<ALKMessageViewModel>,
                 if let filePath = viewModel.filePath, !filePath.isEmpty {
                     updateView(for: State.downloaded(filePath: filePath))
                 } else {
-                    updateView(for: State.download)
+                    if SessionQueue.shared.containsSession(withIdentifier: viewModel.identifier) {
+                        updateView(for: State.downloading(progress: 0, totalCount: 0))
+                    } else {
+                        updateView(for: State.download)
+                    }
                 }
             } else {
-                updateView(for: .upload)
+                if SessionQueue.shared.containsSession(withIdentifier: viewModel.identifier) {
+                    updateView(for: State.downloading(progress: 0, totalCount: 0))
+                } else {
+                    updateView(for: State.upload)
+                }
             }
         } else {
             if let filePath = viewModel.filePath, !filePath.isEmpty {
                 updateView(for: State.downloaded(filePath: filePath))
             } else {
-                updateView(for: State.download)
+                if SessionQueue.shared.containsSession(withIdentifier: viewModel.identifier) {
+                    updateView(for: State.downloading(progress: 0, totalCount: 0))
+                } else {
+                    updateView(for: State.download)
+                }
             }
         }
     }
@@ -235,8 +247,10 @@ class ALKVideoCell: ALKChatBaseCell<ALKMessageViewModel>,
     @objc private func buttonAction(_ selector: UIButton) {
         switch selector {
         case downloadButton:
+            updateView(for: .downloading(progress: 0, totalCount: 0))
             downloadTapped?(true)
         case uploadButton:
+            updateView(for: .downloading(progress: 0, totalCount: 0))
             uploadTapped?(true)
         case cancelButton:
             guard let viewModel = viewModel else { return }
@@ -315,12 +329,18 @@ class ALKVideoCell: ALKChatBaseCell<ALKMessageViewModel>,
 
 extension ALKVideoCell: ALKHTTPManagerUploadDelegate {
     func dataUploaded(task: ALKUploadTask) {
+        if !isCallbackForCurrentCell(task.identifier) {
+            return
+        }
         NSLog("Data uploaded: \(task.totalBytesUploaded) out of total: \(task.totalBytesExpectedToUpload)")
         let progress = task.totalBytesUploaded.degree(outOf: task.totalBytesExpectedToUpload)
         self.updateView(for: .downloading(progress: progress, totalCount: task.totalBytesExpectedToUpload))
     }
 
     func dataUploadingFinished(task: ALKUploadTask) {
+        if !isCallbackForCurrentCell(task.identifier) {
+            return
+        }
         NSLog("VIDEO CELL DATA UPLOADED FOR PATH: %@", viewModel?.filePath ?? "")
         if task.uploadError == nil, task.completed == true, task.filePath != nil {
             DispatchQueue.main.async {
@@ -336,6 +356,9 @@ extension ALKVideoCell: ALKHTTPManagerUploadDelegate {
 
 extension ALKVideoCell: ALKHTTPManagerDownloadDelegate {
     func dataDownloaded(task: ALKDownloadTask) {
+        if !isCallbackForCurrentCell(task.identifier) {
+            return
+        }
         NSLog("VIDEO CELL DATA UPDATED AND FILEPATH IS: %@", viewModel?.filePath ?? "")
         let total = task.totalBytesExpectedToDownload
         let progress = task.totalBytesDownloaded.degree(outOf: total)
@@ -343,13 +366,17 @@ extension ALKVideoCell: ALKHTTPManagerDownloadDelegate {
     }
 
     func dataDownloadingFinished(task: ALKDownloadTask) {
-        guard task.downloadError == nil, let filePath = task.filePath, let identifier = task.identifier, viewModel != nil else {
-            updateView(for: .download)
+        guard task.downloadError == nil, let filePath = task.filePath, let identifier = task.identifier, let _ = self.viewModel else {
+            if isCallbackForCurrentCell(task.identifier) {
+                updateView(for: .download)
+            }
             return
         }
         ALMessageDBService().updateDbMessageWith(key: "key", value: identifier, filePath: filePath)
         DispatchQueue.main.async {
-            self.updateView(for: .downloaded(filePath: filePath))
+            if self.isCallbackForCurrentCell(task.identifier) {
+                self.updateView(for: .downloaded(filePath: filePath))
+            }
         }
     }
 }

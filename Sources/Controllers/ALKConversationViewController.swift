@@ -10,6 +10,7 @@ import AVFoundation
 import AVKit
 import SafariServices
 import UIKit
+import Kingfisher
 
 // swiftlint:disable:next type_body_length
 open class ALKConversationViewController: ALKBaseViewController, Localizable {
@@ -397,6 +398,8 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
 
     open override func viewDidLoad() {
         super.viewDidLoad()
+        Kingfisher.ImageCache.default.memoryStorage.config.totalCostLimit = 100 * 1024 * 1024
+
         setupConstraints()
         setRichMessageKitTheme()
         setupProfanityFilter()
