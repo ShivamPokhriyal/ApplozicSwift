@@ -8,7 +8,6 @@
 
 import Applozic
 import Foundation
-import Kingfisher
 import UIKit
 import SDWebImage
 
@@ -120,6 +119,8 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
 
     var downloadTapped:((Bool) ->Void)?
     var cancelTapped:(() -> Void)?
+
+    var downloadThumbnail: ((_ metadata: ALFileMetaInfo?, _ identifier: String?) -> Void)?
 
     class func topPadding() -> CGFloat {
         return 12
@@ -377,18 +378,8 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
             return
         }
         guard let thumbnailPath = metadata.thumbnailFilePath else {
-            ALMessageClientService().downloadImageThumbnailUrl(metadata.thumbnailUrl, blobKey: metadata.thumbnailBlobKey) { url, error in
-                guard error == nil,
-                    let url = url
-                else {
-                    print("Error downloading thumbnail url")
-                    return
-                }
-                let httpManager = ALKHTTPManager()
-                httpManager.downloadDelegate = self
-                let task = ALKDownloadTask(downloadUrl: url, fileName: metadata.name)
-                task.identifier = ThumbnailIdentifier.addPrefix(to: message.identifier)
-                httpManager.downloadAttachment(task: task)
+            if let downloadThumbnail = downloadThumbnail {
+                downloadThumbnail(metadata, message.identifier)
             }
             return
         }
@@ -416,20 +407,7 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
         uploadTapped?(true)
     }
 
-    fileprivate func updateThumbnailPath(_ key: String, filePath: String) {
-        let messageKey = ThumbnailIdentifier.removePrefix(from: key)
-        guard let dbMessage = ALMessageDBService().getMessageByKey("key", value: messageKey) as? DB_Message else { return }
-        dbMessage.fileMetaInfo.thumbnailFilePath = filePath
-
-        let alHandler = ALDBHandler.sharedInstance()
-        do {
-            try alHandler?.managedObjectContext.save()
-        } catch {
-            NSLog("Not saved due to error")
-        }
-    }
-
-    fileprivate func setThumbnail(_ path: String) {
+    func setThumbnail(_ path: String) {
         let docDirPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let path = docDirPath.appendingPathComponent(path)
         setPhotoViewImageFromFileURL(path)
@@ -440,91 +418,15 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
     }
 
     func setPhotoViewImageFromFileURL(_ fileURL: URL) {
-        photoView.sd_setImage(with: fileURL, placeholderImage: nil, options: SDWebImageOptions.refreshCached, context: nil)
+        guard let image = ALKImageUtils().downsample(imageAt: fileURL, to: photoView.bounds.size, scale: 1.0) else {
+            /// Cannot downsample, use sd_web_image instead
+            self.photoView.sd_setImage(with: fileURL, placeholderImage: nil, options: SDWebImageOptions.refreshCached, context: nil)
+            return
+        }
+        photoView.image = image
     }
 
     func menuReport(_: Any) {
         menuAction?(.reportMessage)
-    }
-
-    func isCallbackForCurrentCell(_ taskId: String?) -> Bool {
-        guard
-            let messageId = viewModel?.identifier,
-            let taskId = taskId,
-            taskId.contains(messageId)
-            else {
-                return false
-        }
-        return true
-    }
-}
-
-extension ALKPhotoCell: ALKHTTPManagerUploadDelegate {
-    func dataUploaded(task: ALKUploadTask) {
-        if !isCallbackForCurrentCell(task.identifier) {
-            return
-        }
-        NSLog("VIDEO CELL DATA UPDATED AND FILEPATH IS: %@", viewModel?.filePath ?? "")
-        DispatchQueue.main.async {
-            print("task filepath:: ", task.filePath ?? "")
-            let progress = task.totalBytesUploaded.degree(outOf: task.totalBytesExpectedToUpload)
-            self.updateView(for: .uploading(progress: progress))
-        }
-    }
-
-    func dataUploadingFinished(task: ALKUploadTask) {
-        if !isCallbackForCurrentCell(task.identifier) {
-            return
-        }
-        NSLog("VIDEO CELL DATA UPLOADED FOR PATH: %@", viewModel?.filePath ?? "")
-        if task.uploadError == nil, task.completed == true, task.filePath != nil {
-            DispatchQueue.main.async {
-                self.updateView(for: State.uploaded)
-            }
-        } else {
-            DispatchQueue.main.async {
-                self.updateView(for: .upload(filePath: task.filePath ?? ""))
-            }
-        }
-    }
-}
-
-extension ALKPhotoCell: ALKHTTPManagerDownloadDelegate {
-    func dataDownloaded(task: ALKDownloadTask) {
-        if !isCallbackForCurrentCell(task.identifier) {
-            return
-        }
-        NSLog("Image Bytes downloaded: %i", task.totalBytesDownloaded)
-        guard
-            let identifier = task.identifier,
-            !ThumbnailIdentifier.hasPrefix(in: identifier)
-        else {
-            return
-        }
-        let progress = task.totalBytesDownloaded.degree(outOf: task.totalBytesExpectedToDownload)
-        DispatchQueue.main.async {
-            self.updateView(for: .downloading(progress: progress))
-        }
-    }
-
-    func dataDownloadingFinished(task: ALKDownloadTask) {
-        guard task.downloadError == nil, let filePath = task.filePath, let identifier = task.identifier, viewModel != nil else {
-            return
-        }
-        guard !ThumbnailIdentifier.hasPrefix(in: identifier) else {
-            DispatchQueue.main.async {
-                self.setThumbnail(filePath)
-            }
-            if isCallbackForCurrentCell(task.identifier) {
-                self.updateThumbnailPath(identifier, filePath: filePath)
-            }
-            return
-        }
-        ALMessageDBService().updateDbMessageWith(key: "key", value: identifier, filePath: filePath)
-        DispatchQueue.main.async {
-            if self.isCallbackForCurrentCell(task.identifier) {
-                self.updateView(for: .downloaded(filePath: filePath))
-            }
-        }
     }
 }

@@ -27,6 +27,6 @@ extension ALKConversationViewController: ALKCustomCameraProtocol {
             notificationView.noDataConnectionNotificationView()
             return
         }
-        viewModel.uploadImage(view: cell, indexPath: newIndexPath)
+        viewModel.uploadImage(indexPath: newIndexPath, handler: attachmentHandler)
     }
 }

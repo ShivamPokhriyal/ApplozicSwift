@@ -286,7 +286,7 @@ class ALKVideoCell: ALKChatBaseCell<ALKMessageViewModel>,
         }
     }
 
-    fileprivate func updateView(for state: State) {
+    func updateView(for state: State) {
         switch state {
         case .download:
             uploadButton.isHidden = true
@@ -307,7 +307,6 @@ class ALKVideoCell: ALKChatBaseCell<ALKMessageViewModel>,
             photoView.image = fileUtills.getThumbnail(filePath: path)
         case .downloading(let progress, _):
             // show progress bar
-            print("downloading")
             uploadButton.isHidden = true
             downloadButton.isHidden = true
             playButton.isHidden = true
@@ -325,58 +324,4 @@ class ALKVideoCell: ALKChatBaseCell<ALKMessageViewModel>,
         }
     }
 
-}
-
-extension ALKVideoCell: ALKHTTPManagerUploadDelegate {
-    func dataUploaded(task: ALKUploadTask) {
-        if !isCallbackForCurrentCell(task.identifier) {
-            return
-        }
-        NSLog("Data uploaded: \(task.totalBytesUploaded) out of total: \(task.totalBytesExpectedToUpload)")
-        let progress = task.totalBytesUploaded.degree(outOf: task.totalBytesExpectedToUpload)
-        self.updateView(for: .downloading(progress: progress, totalCount: task.totalBytesExpectedToUpload))
-    }
-
-    func dataUploadingFinished(task: ALKUploadTask) {
-        if !isCallbackForCurrentCell(task.identifier) {
-            return
-        }
-        NSLog("VIDEO CELL DATA UPLOADED FOR PATH: %@", viewModel?.filePath ?? "")
-        if task.uploadError == nil, task.completed == true, task.filePath != nil {
-            DispatchQueue.main.async {
-                self.updateView(for: State.downloaded(filePath: task.filePath ?? ""))
-            }
-        } else {
-            DispatchQueue.main.async {
-                self.updateView(for: .upload)
-            }
-        }
-    }
-}
-
-extension ALKVideoCell: ALKHTTPManagerDownloadDelegate {
-    func dataDownloaded(task: ALKDownloadTask) {
-        if !isCallbackForCurrentCell(task.identifier) {
-            return
-        }
-        NSLog("VIDEO CELL DATA UPDATED AND FILEPATH IS: %@", viewModel?.filePath ?? "")
-        let total = task.totalBytesExpectedToDownload
-        let progress = task.totalBytesDownloaded.degree(outOf: total)
-        self.updateView(for: .downloading(progress: progress, totalCount: total))
-    }
-
-    func dataDownloadingFinished(task: ALKDownloadTask) {
-        guard task.downloadError == nil, let filePath = task.filePath, let identifier = task.identifier, let _ = self.viewModel else {
-            if isCallbackForCurrentCell(task.identifier) {
-                updateView(for: .download)
-            }
-            return
-        }
-        ALMessageDBService().updateDbMessageWith(key: "key", value: identifier, filePath: filePath)
-        DispatchQueue.main.async {
-            if self.isCallbackForCurrentCell(task.identifier) {
-                self.updateView(for: .downloaded(filePath: filePath))
-            }
-        }
-    }
 }

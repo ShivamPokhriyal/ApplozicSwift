@@ -475,7 +475,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
         return nil
     }
 
-    open func downloadAttachment(message: ALKMessageViewModel, view: UIView) {
+    open func downloadAttachment(message: ALKMessageViewModel, handler: AttachmentUpdateHandler) {
         guard ALDataNetworkConnection.checkDataNetworkAvailable() else {
             let notificationView = ALNotificationView()
             notificationView.noDataConnectionNotificationView()
@@ -484,7 +484,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
         /// For email attachments url is to be used directly
         if message.source == emailSourceType, let url = message.fileMetaInfo?.url {
             let httpManager = ALKHTTPManager()
-            httpManager.downloadDelegate = view as? ALKHTTPManagerDownloadDelegate
+            httpManager.downloadDelegate = handler
             let task = ALKDownloadTask(downloadUrl: url, fileName: message.fileMetaInfo?.name)
             task.identifier = message.identifier
             task.totalBytesExpectedToDownload = message.size
@@ -497,7 +497,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
                 return
             }
             let httpManager = ALKHTTPManager()
-            httpManager.downloadDelegate = view as? ALKHTTPManagerDownloadDelegate
+            httpManager.downloadDelegate = handler
             let task = ALKDownloadTask(downloadUrl: fileUrl, fileName: message.fileMetaInfo?.name)
             task.identifier = message.identifier
             task.totalBytesExpectedToDownload = message.size
@@ -767,7 +767,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
         return (alMessage, IndexPath(row: 0, section: messageModels.count - 1))
     }
 
-    open func uploadVideo(view: UIView, indexPath: IndexPath) {
+    open func uploadVideo(indexPath: IndexPath, handler: AttachmentUpdateHandler) {
         let alMessage = alMessages[indexPath.section]
 
         let clientService = ALMessageClientService()
@@ -792,7 +792,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
             }
             NSLog("URL TO UPLOAD VIDEO AT PATH %@ IS %@", alMessage.imageFilePath ?? "", url.description)
             let downloadManager = ALKHTTPManager()
-            downloadManager.uploadDelegate = view as? ALKHTTPManagerUploadDelegate
+            downloadManager.uploadDelegate = handler
             let task = ALKUploadTask(url: url, fileName: alMessage.fileMeta.name)
             task.identifier = alMessage.identifier
             task.contentType = alMessage.fileMeta.contentType
@@ -938,7 +938,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
         })
     }
 
-    open func uploadImage(view: UIView, indexPath: IndexPath) {
+    open func uploadImage(indexPath: IndexPath, handler: AttachmentUpdateHandler) {
         let alMessage = alMessages[indexPath.section]
         let clientService = ALMessageClientService()
         let messageService = ALMessageDBService()
@@ -962,7 +962,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
             task.contentType = alMessage.fileMeta.contentType
             task.filePath = alMessage.imageFilePath
             let downloadManager = ALKHTTPManager()
-            downloadManager.uploadDelegate = view as? ALKHTTPManagerUploadDelegate
+            downloadManager.uploadDelegate = handler
             downloadManager.uploadAttachment(task: task)
             downloadManager.uploadCompleted = { [weak self] responseDict, task in
                 if task.uploadError == nil, task.completed {

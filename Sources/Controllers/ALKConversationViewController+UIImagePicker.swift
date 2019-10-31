@@ -41,7 +41,7 @@ extension ALKConversationViewController:
                         notificationView.noDataConnectionNotificationView()
                         return
                     }
-                    self.viewModel.uploadVideo(view: cell, indexPath: newIndexPath)
+                    self.viewModel.uploadVideo(indexPath: newIndexPath, handler: self.attachmentHandler)
                 }
             })
         }

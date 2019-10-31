@@ -117,7 +117,7 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                     cell.uploadTapped = { [weak self]
                         _ in
                         // upload
-                        self?.attachmentViewDidTapUpload(view: cell, indexPath: indexPath)
+                        self?.attachmentViewDidTapUpload(indexPath: indexPath)
                     }
                     cell.uploadCompleted = { [weak self]
                         responseDict in
@@ -125,10 +125,13 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                     }
                     cell.downloadTapped = { [weak self]
                         _ in
-                        self?.attachmentViewDidTapDownload(view: cell, indexPath: indexPath)
+                        self?.attachmentViewDidTapDownload(indexPath: indexPath)
                     }
                     cell.menuAction = { [weak self] action in
                         self?.menuItemSelected(action: action, message: message)
+                    }
+                    cell.downloadThumbnail = { [weak self] metadata, identifier in
+                        self?.downloadThumbnail(metadata: metadata, identifier: identifier)
                     }
                     return cell
 
@@ -144,6 +147,9 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                     cell.menuAction = { [weak self] action in
                         self?.menuItemSelected(action: action, message: message)
                     }
+                    cell.downloadThumbnail = { [weak self] metadata, identifier in
+                        self?.downloadThumbnail(metadata: metadata, identifier: identifier)
+                    }
                     return cell
                 }
 
@@ -155,7 +161,7 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                     cell.update(viewModel: message)
                     cell.downloadTapped = { [weak self]
                         _ in
-                        self?.attachmentViewDidTapDownload(view: cell, indexPath: indexPath)
+                        self?.attachmentViewDidTapDownload(indexPath: indexPath)
                     }
                     cell.avatarTapped = { [weak self] in
                         guard let currentModel = cell.viewModel else { return }
@@ -164,6 +170,9 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                     cell.menuAction = { [weak self] action in
                         self?.menuItemSelected(action: action, message: message)
                     }
+                    cell.downloadThumbnail = { [weak self] metadata, identifier in
+                        self?.downloadThumbnail(metadata: metadata, identifier: identifier)
+                    }
                     return cell
 
                 } else {
@@ -171,6 +180,9 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                     cell.showReport = configuration.isReportMessageEnabled
                     cell.menuAction = { [weak self] action in
                         self?.menuItemSelected(action: action, message: message)
+                    }
+                    cell.downloadThumbnail = { [weak self] metadata, identifier in
+                        self?.downloadThumbnail(metadata: metadata, identifier: identifier)
                     }
                     cell.setLocalizedStringFileName(configuration.localizedStringFileName)
                     cell.update(viewModel: message)
@@ -187,7 +199,7 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                 cell.showReport = false
                 cell.setLocalizedStringFileName(configuration.localizedStringFileName)
                 cell.downloadTapped = { [weak self] _ in
-                    self?.attachmentViewDidTapDownload(view: cell, indexPath: indexPath)
+                    self?.attachmentViewDidTapDownload( indexPath: indexPath)
                 }
                 cell.update(viewModel: message)
                 cell.setCellDelegate(delegate: self)
@@ -200,7 +212,7 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                 cell.showReport = configuration.isReportMessageEnabled
                 cell.setLocalizedStringFileName(configuration.localizedStringFileName)
                 cell.downloadTapped = { [weak self] _ in
-                    self?.attachmentViewDidTapDownload(view: cell, indexPath: indexPath)
+                    self?.attachmentViewDidTapDownload(indexPath: indexPath)
                 }
                 cell.update(viewModel: message)
                 cell.setCellDelegate(delegate: self)
@@ -255,12 +267,12 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                     _ in
                     // upload
 //                    self?.attachmentViewDidTapUpload(view: cell, indexPath: indexPath)
-                    guard ALDataNetworkConnection.checkDataNetworkAvailable() else {
+                    guard ALDataNetworkConnection.checkDataNetworkAvailable(), let weakSelf = self else {
                         let notificationView = ALNotificationView()
                         notificationView.noDataConnectionNotificationView()
                         return
                     }
-                    self?.viewModel.uploadVideo(view: cell, indexPath: indexPath)
+                    weakSelf.viewModel.uploadVideo(indexPath: indexPath, handler: weakSelf.attachmentHandler)
                 }
                 cell.uploadCompleted = { [weak self]
                     responseDict in
@@ -268,7 +280,7 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                 }
                 cell.downloadTapped = { [weak self]
                     _ in
-                    self?.attachmentViewDidTapDownload(view: cell, indexPath: indexPath)
+                    self?.attachmentViewDidTapDownload(indexPath: indexPath)
                 }
                 cell.menuAction = { [weak self] action in
                     self?.menuItemSelected(action: action, message: message)
@@ -281,7 +293,7 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                 cell.update(viewModel: message)
                 cell.downloadTapped = { [weak self]
                     _ in
-                    self?.attachmentViewDidTapDownload(view: cell, indexPath: indexPath)
+                    self?.attachmentViewDidTapDownload(indexPath: indexPath)
                 }
                 cell.avatarTapped = { [weak self] in
                     guard let currentModel = cell.viewModel else { return }
@@ -410,7 +422,7 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                 cell.uploadTapped = { [weak self]
                     _ in
                     // upload
-                    self?.attachmentViewDidTapUpload(view: cell, indexPath: indexPath)
+                    self?.attachmentViewDidTapUpload(indexPath: indexPath)
                 }
                 cell.uploadCompleted = { [weak self]
                     responseDict in
@@ -418,7 +430,7 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                 }
                 cell.downloadTapped = { [weak self]
                     _ in
-                    self?.attachmentViewDidTapDownload(view: cell, indexPath: indexPath)
+                    self?.attachmentViewDidTapDownload(indexPath: indexPath)
                 }
 
                 return cell
@@ -431,7 +443,7 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                 cell.uploadTapped = { [weak self]
                     _ in
                     // upload
-                    self?.attachmentViewDidTapUpload(view: cell, indexPath: indexPath)
+                    self?.attachmentViewDidTapUpload(indexPath: indexPath)
                 }
                 cell.uploadCompleted = { [weak self]
                     responseDict in
@@ -439,7 +451,7 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                 }
                 cell.downloadTapped = { [weak self]
                     _ in
-                    self?.attachmentViewDidTapDownload(view: cell, indexPath: indexPath)
+                    self?.attachmentViewDidTapDownload(indexPath: indexPath)
                 }
                 return cell
             }
@@ -452,7 +464,7 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                     cell.updateContactDetails(key: message.identifier, filePath: filePath)
                 }
                 if message.filePath == nil {
-                    attachmentViewDidTapDownload(view: cell, indexPath: indexPath)
+                    attachmentViewDidTapDownload(indexPath: indexPath)
                 }
                 cell.contactView.contactSelected = { contactModel in
                     let contact = contactModel.contact
@@ -468,7 +480,7 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                 }
                 cell.setLocalizedStringFileName(configuration.localizedStringFileName)
                 if message.filePath == nil {
-                    attachmentViewDidTapDownload(view: cell, indexPath: indexPath)
+                    attachmentViewDidTapDownload(indexPath: indexPath)
                 }
                 cell.contactView.contactSelected = { contactModel in
                     let contact = contactModel.contact
@@ -623,6 +635,32 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
             let horizontalOffset = scrollView.contentOffset.x
             let collectionView = scrollView as! UICollectionView
             contentOffsetDictionary[collectionView.tag] = horizontalOffset as AnyObject
+        }
+    }
+
+    private func downloadThumbnail(metadata: ALFileMetaInfo?, identifier: String?) {
+        guard let metadata = metadata, let identifier = identifier else { return }
+        ALMessageClientService().downloadImageThumbnailUrl(metadata.thumbnailUrl, blobKey: metadata.thumbnailBlobKey) { url, error in
+            guard error == nil,
+                let url = url
+                else {
+                    print("Error downloading thumbnail url")
+                    return
+            }
+            let httpManager = ALKHTTPManager()
+            httpManager.downloadDelegate = self.attachmentHandler
+            let task = ALKDownloadTask(downloadUrl: url, fileName: metadata.name)
+            task.identifier = ThumbnailIdentifier.addPrefix(to: identifier)
+            httpManager.downloadAttachment(task: task)
+            httpManager.downloadCompleted = { [weak self] task in
+                guard let weakSelf = self, let identifier = task.identifier, let vm = weakSelf.viewModel else { return }
+                var msg = vm.messageForRow(identifier: identifier)
+                if ThumbnailIdentifier.hasPrefix(in: identifier) {
+                    msg?.fileMetaInfo?.thumbnailFilePath = task.filePath
+                } else {
+                    msg?.filePath = task.filePath
+                }
+            }
         }
     }
 }

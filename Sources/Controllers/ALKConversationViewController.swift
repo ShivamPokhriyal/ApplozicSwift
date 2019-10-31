@@ -55,6 +55,7 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
     open lazy var navigationBar = ALKConversationNavBar(configuration: self.configuration, delegate: self)
 
     var contactService: ALContactService!
+    let attachmentHandler = AttachmentUpdateHandler()
 
     var loadingIndicator = ALKLoadingIndicator(frame: .zero)
 
@@ -403,6 +404,10 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
         setupConstraints()
         setRichMessageKitTheme()
         setupProfanityFilter()
+        attachmentHandler.cellForTask = { identifier in
+            guard let identifier = identifier, let index = self.viewModel.sectionFor(identifier: identifier) else { return nil }
+            return self.tableView.cellForRow(at: IndexPath(row: 0, section: index)) as? ALKChatBaseCell<ALKMessageViewModel>
+        }
     }
 
     open override func viewDidLayoutSubviews() {
@@ -1057,18 +1062,18 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
         unreadScrollButton.isHidden = true
     }
 
-    func attachmentViewDidTapDownload(view: UIView, indexPath: IndexPath) {
+    func attachmentViewDidTapDownload(indexPath: IndexPath) {
         guard let message = viewModel.messageForRow(indexPath: indexPath) else { return }
-        viewModel.downloadAttachment(message: message, view: view)
+        viewModel.downloadAttachment(message: message, handler: attachmentHandler)
     }
 
-    func attachmentViewDidTapUpload(view: UIView, indexPath: IndexPath) {
+    func attachmentViewDidTapUpload(indexPath: IndexPath) {
         guard ALDataNetworkConnection.checkDataNetworkAvailable() else {
             let notificationView = ALNotificationView()
             notificationView.noDataConnectionNotificationView()
             return
         }
-        viewModel.uploadImage(view: view, indexPath: indexPath)
+        viewModel.uploadImage(indexPath: indexPath, handler: attachmentHandler)
     }
 
     func attachmentUploadDidCompleteWith(response: Any?, indexPath: IndexPath) {
@@ -1914,7 +1919,7 @@ extension ALKConversationViewController: ALKCustomPickerDelegate {
                     notificationView.noDataConnectionNotificationView()
                     return
                 }
-                viewModel.uploadImage(view: cell, indexPath: newIndexPath)
+                viewModel.uploadImage(indexPath: newIndexPath, handler: attachmentHandler)
             } else {
                 let path = videos[index - images.count]
                 guard let indexPath = viewModel.sendVideo(
@@ -1933,7 +1938,7 @@ extension ALKConversationViewController: ALKCustomPickerDelegate {
                     notificationView.noDataConnectionNotificationView()
                     return
                 }
-                viewModel.uploadVideo(view: cell, indexPath: indexPath)
+                viewModel.uploadVideo(indexPath: indexPath, handler: attachmentHandler)
             }
         }
     }
