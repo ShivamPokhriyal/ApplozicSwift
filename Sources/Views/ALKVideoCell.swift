@@ -184,7 +184,7 @@ class ALKVideoCell: ALKChatBaseCell<ALKMessageViewModel>,
         playButton.addTarget(self, action: #selector(buttonAction(_:)), for: .touchUpInside)
         cancelButton.addTarget(self, action: #selector(buttonAction(_:)), for: .touchUpInside)
 
-        contentView.addViewsForAutolayout(views: [frontView, photoView,bubbleView, timeLabel,fileSizeLabel, downloadButton, playButton, progressView, uploadButton, cancelButton])
+        contentView.addViewsForAutolayout(views: [frontView, photoView, bubbleView, timeLabel, fileSizeLabel, downloadButton, playButton, progressView, uploadButton, cancelButton])
         contentView.bringSubviewToFront(photoView)
         contentView.bringSubviewToFront(frontView)
         contentView.bringSubviewToFront(actionButton)
@@ -270,10 +270,11 @@ class ALKVideoCell: ALKChatBaseCell<ALKMessageViewModel>,
             guard let messages = dbService.getAllMessagesWithAttachment(
                 forContact: viewModel?.contactId,
                 andChannelKey: viewModel?.channelKey,
-                onlyDownloadedAttachments: true) as? [ALMessage] else { return }
+                onlyDownloadedAttachments: true
+            ) as? [ALMessage] else { return }
 
             let messageModels = messages.map { $0.messageModel }
-            NSLog("Messages with attachment: ", messages )
+            NSLog("Messages with attachment: ", messages)
 
             guard let viewModel = viewModel as? ALKMessageModel,
                 let currentIndex = messageModels.index(of: viewModel) else { return }
@@ -295,7 +296,7 @@ class ALKVideoCell: ALKChatBaseCell<ALKMessageViewModel>,
             playButton.isHidden = true
             progressView.isHidden = true
             cancelButton.isHidden = true
-        case .downloaded(let filePath):
+        case let .downloaded(filePath):
             uploadButton.isHidden = true
             downloadButton.isHidden = true
             progressView.isHidden = true
@@ -323,5 +324,4 @@ class ALKVideoCell: ALKChatBaseCell<ALKMessageViewModel>,
             uploadButton.isHidden = false
         }
     }
-
 }

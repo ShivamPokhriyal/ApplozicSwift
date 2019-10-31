@@ -8,9 +8,9 @@
 import Applozic
 import AVFoundation
 import AVKit
+import Kingfisher
 import SafariServices
 import UIKit
-import Kingfisher
 
 // swiftlint:disable:next type_body_length
 open class ALKConversationViewController: ALKBaseViewController, Localizable {
@@ -404,9 +404,9 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
         setupConstraints()
         setRichMessageKitTheme()
         setupProfanityFilter()
-        attachmentHandler.cellForTask = { identifier in
-            guard let identifier = identifier, let index = self.viewModel.sectionFor(identifier: identifier) else { return nil }
-            return self.tableView.cellForRow(at: IndexPath(row: 0, section: index)) as? ALKChatBaseCell<ALKMessageViewModel>
+        attachmentHandler.cellForTask = { [weak self] identifier in
+            guard let identifier = identifier, let index = self?.viewModel.sectionFor(identifier: identifier) else { return nil }
+            return self?.tableView.cellForRow(at: IndexPath(row: 0, section: index)) as? ALKChatBaseCell<ALKMessageViewModel>
         }
     }
 

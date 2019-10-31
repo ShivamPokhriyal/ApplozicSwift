@@ -8,7 +8,6 @@
 import Applozic
 
 open class AttachmentUpdateHandler: ALKHTTPManagerUploadDelegate, ALKHTTPManagerDownloadDelegate {
-
     var cellForTask: ((String?) -> ALKChatBaseCell<ALKMessageViewModel>?)?
 
     func dataUploaded(task: ALKUploadTask) {
@@ -55,7 +54,7 @@ open class AttachmentUpdateHandler: ALKHTTPManagerUploadDelegate, ALKHTTPManager
             // Return in case of thumbnail
             guard let identifier = task.identifier,
                 !ThumbnailIdentifier.hasPrefix(in: identifier)
-                else { return }
+            else { return }
             view.updateView(for: .downloading(progress: progress))
         case let view as ALKVideoCell:
             view.updateView(for: .downloading(progress: progress, totalCount: task.totalBytesExpectedToDownload))
@@ -77,7 +76,7 @@ open class AttachmentUpdateHandler: ALKHTTPManagerUploadDelegate, ALKHTTPManager
                 // Return in case of thumbnail
                 guard let identifier = task.identifier,
                     !ThumbnailIdentifier.hasPrefix(in: identifier)
-                    else { return }
+                else { return }
                 view.updateView(for: .download)
             case let view as ALKVideoCell:
                 view.updateView(for: .download)
@@ -98,7 +97,7 @@ open class AttachmentUpdateHandler: ALKHTTPManagerUploadDelegate, ALKHTTPManager
             // Return in case of thumbnail
             guard let identifier = task.identifier,
                 !ThumbnailIdentifier.hasPrefix(in: identifier)
-                else { return }
+            else { return }
             view.updateView(for: .downloaded(filePath: filePath))
         case let view as ALKVideoCell:
             view.updateView(for: .downloaded(filePath: filePath))

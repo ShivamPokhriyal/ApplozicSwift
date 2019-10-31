@@ -37,11 +37,10 @@ struct ThumbnailIdentifier {
 }
 
 class SessionQueue {
-
     public static let shared = SessionQueue()
     private var queue = [URLSession]()
 
-    private init() { }
+    private init() {}
 
     public func getAllSessions() -> [URLSession] {
         return queue
@@ -82,7 +81,6 @@ class SessionQueue {
         }
         return false
     }
-
 }
 
 class ALKHTTPManager: NSObject {
@@ -94,7 +92,7 @@ class ALKHTTPManager: NSObject {
     var downloadCompleted: ((_ task: ALKDownloadTask) -> Void)?
 
     var length: Int64 = 0
-    var buffer:NSMutableData! = NSMutableData()
+    var buffer: NSMutableData! = NSMutableData()
     var uploadTask: ALKUploadTask?
     var downloadTask: ALKDownloadTask?
 
@@ -164,7 +162,7 @@ class ALKHTTPManager: NSObject {
                 let serviceEnabled = ALApplozicSettings.isS3StorageServiceEnabled() || ALApplozicSettings.isGoogleCloudServiceEnabled()
                 guard let urlRequest = serviceEnabled ? ALRequestHandler.createGETRequest(withUrlStringWithoutHeader: urlString, paramString: nil) :
                     ALRequestHandler.createGETRequest(withUrlString: urlString, paramString: nil) else { return }
-                let session = URLSession(configuration: configuration, delegate:self, delegateQueue: nil)
+                let session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
                 self.startSession(session, request: urlRequest as URLRequest)
             }
         }
@@ -195,7 +193,7 @@ class ALKHTTPManager: NSObject {
             DispatchQueue.global(qos: .default).async {
                 let configuration = URLSessionConfiguration.background(withIdentifier: identifier)
                 guard !urlString.isEmpty, let url = URL(string: urlString) else { return }
-                let session = URLSession(configuration: configuration, delegate:self, delegateQueue: nil)
+                let session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
                 self.startSession(session, request: URLRequest(url: url))
             }
         }
@@ -224,7 +222,7 @@ class ALKHTTPManager: NSObject {
             request.setValue(contentType, forHTTPHeaderField: "Content-Type")
             request.url = task.url
             let configuration = URLSessionConfiguration.background(withIdentifier: identifier)
-            let session = URLSession(configuration: configuration, delegate:self, delegateQueue: nil)
+            let session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
             SessionQueue.shared.addSession(session)
             ALKHTTPManager.semaphore.wait()
             guard SessionQueue.shared.containsSession(session) else {
@@ -259,7 +257,7 @@ class ALKHTTPManager: NSObject {
 
     func uploadAttachment(task: ALKUploadTask) {
         guard let identifier = task.identifier else { return }
-        self.uploadTask = task
+        uploadTask = task
         let docDirPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let imageFilePath = task.filePath
         let filePath = docDirPath.appendingPathComponent(imageFilePath ?? "")
@@ -277,7 +275,7 @@ class ALKHTTPManager: NSObject {
                 if let data = imageData as Data? {
                     print("data present")
                     body.append(String(format: "--%@\r\n", boundary).data(using: .utf8)!)
-                    body.append(String(format: "Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"\r\n", fileParamConstant,task.fileName ?? "").data(using: .utf8)!)
+                    body.append(String(format: "Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"\r\n", fileParamConstant, task.fileName ?? "").data(using: .utf8)!)
                     body.append(String(format: "Content-Type:%@\r\n\r\n", task.contentType ?? "").data(using: .utf8)!)
                     body.append(data)
                     body.append(String(format: "\r\n").data(using: .utf8)!)
@@ -292,7 +290,7 @@ class ALKHTTPManager: NSObject {
                     return
                 }
                 let configuration = URLSessionConfiguration.background(withIdentifier: identifier)
-                let session = URLSession(configuration: configuration, delegate:self, delegateQueue: nil)
+                let session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
                 self.startSession(session, request: request)
             }
         }
@@ -370,7 +368,7 @@ extension ALKHTTPManager: URLSessionDataDelegate {
                 self.uploadCompleted?(responseDictionary, uploadTask)
                 self.uploadDelegate?.dataUploadingFinished(task: uploadTask)
             }
-        } catch(let error) {
+        } catch {
             print(error)
             let responseString = String(data: data, encoding: .utf8)
             print("responseString = \(String(describing: responseString))")
@@ -384,7 +382,7 @@ extension ALKHTTPManager: URLSessionDataDelegate {
         ALKHTTPManager.semaphore.signal()
     }
 
-    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+    func urlSession(_ session: URLSession, task _: URLSessionTask, didCompleteWithError error: Error?) {
         SessionQueue.shared.removeSession(session)
         ALKHTTPManager.semaphore.signal()
         if let uploadTask = self.uploadTask, let error = error {
@@ -457,8 +455,8 @@ extension ALKHTTPManager: URLSessionDataDelegate {
         guard
             let message = ALMessageDBService().getMessageByKey(messageKey),
             message.fileMeta.contentType.contains("image")
-            else {
-                return nil
+        else {
+            return nil
         }
 
         /// Compress data
@@ -467,7 +465,6 @@ extension ALKHTTPManager: URLSessionDataDelegate {
         }
         return compressedData
     }
-
 }
 
 extension OutputStream {
@@ -483,7 +480,7 @@ extension OutputStream {
     func append(contentsOf url: URL) -> Int {
         guard let inputStream = InputStream(url: url) else { return -1 }
         inputStream.open()
-        let bufferSize = 1_024 * 1_024
+        let bufferSize = 1024 * 1024
         var buffer = [UInt8](repeating: 0, count: bufferSize)
         var bytes = 0
         var totalBytes = 0

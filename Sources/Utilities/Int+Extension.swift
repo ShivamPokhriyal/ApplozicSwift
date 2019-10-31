@@ -9,6 +9,6 @@ import Foundation
 
 extension Int64 {
     func degree(outOf: Int64) -> Double {
-        return Double( self * 360 / outOf )
+        return Double(self * 360 / outOf)
     }
 }

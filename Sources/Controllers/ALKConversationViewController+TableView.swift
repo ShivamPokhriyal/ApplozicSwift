@@ -199,7 +199,7 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                 cell.showReport = false
                 cell.setLocalizedStringFileName(configuration.localizedStringFileName)
                 cell.downloadTapped = { [weak self] _ in
-                    self?.attachmentViewDidTapDownload( indexPath: indexPath)
+                    self?.attachmentViewDidTapDownload(indexPath: indexPath)
                 }
                 cell.update(viewModel: message)
                 cell.setCellDelegate(delegate: self)
@@ -643,9 +643,9 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
         ALMessageClientService().downloadImageThumbnailUrl(metadata.thumbnailUrl, blobKey: metadata.thumbnailBlobKey) { url, error in
             guard error == nil,
                 let url = url
-                else {
-                    print("Error downloading thumbnail url")
-                    return
+            else {
+                print("Error downloading thumbnail url")
+                return
             }
             let httpManager = ALKHTTPManager()
             httpManager.downloadDelegate = self.attachmentHandler

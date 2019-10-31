@@ -6,9 +6,9 @@
 //  Copyright © 2017 Applozic. All rights reserved.
 //
 
+import Applozic
 import Photos
 import UIKit
-import Applozic
 
 protocol ALKCustomPickerDelegate: AnyObject {
     func filesSelected(images: [UIImage], videos: [String])
@@ -181,7 +181,7 @@ class ALKCustomPickerViewController: ALKBaseViewController, Localizable {
         activityIndicator.startAnimating()
         view.isUserInteractionEnabled = false
         navigationController?.view.isUserInteractionEnabled = false
-        export { (images, videos, error) in
+        export { images, videos, error in
             self.view.isUserInteractionEnabled = true
             self.navigationController?.view.isUserInteractionEnabled = true
             self.activityIndicator.stopAnimating()
@@ -241,7 +241,7 @@ class ALKCustomPickerViewController: ALKBaseViewController, Localizable {
                 } else {
                     let options = PHImageRequestOptions()
                     options.isSynchronous = true
-                    PHCachingImageManager.default().requestImage(for: asset, targetSize: CGSize(width: 1280, height: 720), contentMode: .aspectFill, options: options, resultHandler: { (image, _) in
+                    PHCachingImageManager.default().requestImage(for: asset, targetSize: CGSize(width: 1280, height: 720), contentMode: .aspectFill, options: options, resultHandler: { image, _ in
                         guard let image = image else {
                             group.leave()
                             return

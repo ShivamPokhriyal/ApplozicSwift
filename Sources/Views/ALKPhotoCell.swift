@@ -8,8 +8,8 @@
 
 import Applozic
 import Foundation
-import UIKit
 import SDWebImage
+import UIKit
 
 // MARK: - ALKPhotoCell
 
@@ -67,6 +67,7 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
         let view = KDCircularProgress(frame: .zero)
         view.startAngle = -90
         view.clockwise = true
+        view.isHidden = true
         return view
     }()
 
@@ -117,8 +118,8 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
     var uploadTapped: ((Bool) -> Void)?
     var uploadCompleted: ((_ responseDict: Any?) -> Void)?
 
-    var downloadTapped:((Bool) ->Void)?
-    var cancelTapped:(() -> Void)?
+    var downloadTapped: ((Bool) -> Void)?
+    var cancelTapped: (() -> Void)?
 
     var downloadThumbnail: ((_ metadata: ALFileMetaInfo?, _ identifier: String?) -> Void)?
 
@@ -310,7 +311,6 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
         default:
             print("Do nothing")
         }
-
     }
 
     func updateView(for state: State) {
@@ -336,7 +336,7 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
             progressIndicator.isHidden = true
             cancelButton.isHidden = true
             downloadButton.isHidden = true
-        case .uploading(let progress):
+        case let .uploading(progress):
             uploadButton.isHidden = true
             frontView.isUserInteractionEnabled = false
             progressIndicator.isHidden = false
@@ -350,7 +350,7 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
             cancelButton.isHidden = true
             uploadButton.isHidden = true
             loadThumbnail()
-        case .downloading(let progress):
+        case let .downloading(progress):
             uploadButton.isHidden = true
             progressIndicator.isHidden = false
             progressIndicator.angle = progress
@@ -420,7 +420,7 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
     func setPhotoViewImageFromFileURL(_ fileURL: URL) {
         guard let image = ALKImageUtils().downsample(imageAt: fileURL, to: photoView.bounds.size, scale: 1.0) else {
             /// Cannot downsample, use sd_web_image instead
-            self.photoView.sd_setImage(with: fileURL, placeholderImage: nil, options: SDWebImageOptions.refreshCached, context: nil)
+            photoView.sd_setImage(with: fileURL, placeholderImage: nil, options: SDWebImageOptions.refreshCached, context: nil)
             return
         }
         photoView.image = image
