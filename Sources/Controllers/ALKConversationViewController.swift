@@ -304,7 +304,7 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
             print("update group detail")
             guard weakSelf.viewModel.isGroup else { return }
             let alChannelService = ALChannelService()
-            guard let key = weakSelf.viewModel.channelKey, let channel = alChannelService.getChannelByKey(key), let name = channel.name else { return }
+            guard let key = weakSelf.viewModel.channelKey, let channel = alChannelService.getChannelByKey(key), let _ = channel.name else { return }
             let profile = weakSelf.viewModel.conversationProfileFrom(contact: nil, channel: channel)
             weakSelf.navigationBar.updateView(profile: profile)
             weakSelf.newMessagesAdded()
@@ -312,7 +312,7 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
 
         NotificationCenter.default.addObserver(forName: NSNotification.Name(rawValue: "APP_ENTER_IN_FOREGROUND"), object: nil, queue: nil) { [weak self] _ in
             guard let weakSelf = self, weakSelf.viewModel != nil else { return }
-            let profile = weakSelf.viewModel.currentConversationProfile(completion: { profile in
+            weakSelf.viewModel.currentConversationProfile(completion: { profile in
                 guard let profile = profile else { return }
                 weakSelf.navigationBar.updateView(profile: profile)
             })
@@ -1379,7 +1379,7 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
         var responseUrl: URL?
         requestHandler(request) { dat, response, error in
             guard error == nil, let data = dat, let url = response?.url else {
-                print("Error while making submit button request: \(error), \(dat), \(response)")
+                print("Error while making submit button request: \(error?.localizedDescription ?? "")")
                 group.leave()
                 return
             }
@@ -1687,7 +1687,7 @@ extension ALKConversationViewController: ALKLocationCellDelegate {
         let latLonString = String(format: "%f,%f", location.coordinate.latitude, location.coordinate.longitude)
         let locationString = String(format: "https://maps.google.com/maps?q=loc:%@", latLonString)
         guard let locationUrl = URL(string: locationString) else { return }
-        UIApplication.shared.openURL(locationUrl)
+        UIApplication.shared.open(locationUrl)
     }
 }
 
