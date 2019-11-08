@@ -8,7 +8,7 @@
 
 import Applozic
 import Foundation
-import SDWebImage
+import Kingfisher
 import UIKit
 
 // MARK: - ALKPhotoCell
@@ -419,8 +419,9 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
 
     func setPhotoViewImageFromFileURL(_ fileURL: URL) {
         guard let image = ALKImageUtils().downsample(imageAt: fileURL, to: photoView.bounds.size, scale: 1.0) else {
-            /// Cannot downsample, use sd_web_image instead
-            photoView.sd_setImage(with: fileURL, placeholderImage: nil, options: SDWebImageOptions.refreshCached, context: nil)
+            /// Cannot downsample, use Kingfisher instead
+            let provider = LocalFileImageDataProvider(fileURL: fileURL)
+            photoView.kf.setImage(with: provider)
             return
         }
         photoView.image = image

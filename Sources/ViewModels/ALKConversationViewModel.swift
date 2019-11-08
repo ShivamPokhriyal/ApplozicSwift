@@ -820,6 +820,9 @@ open class ALKConversationViewModel: NSObject, Localizable {
             NSLog("Message not found")
         }
         guard let dbMessagePresent = dbMessage, let message = messageService.createMessageEntity(dbMessagePresent) else { return }
+        if message.fileMeta == nil {
+            message.fileMeta = ALFileMetaInfo()
+        }
 
         guard let fileInfo = responseDict as? [String: Any] else { return }
         if ALApplozicSettings.isS3StorageServiceEnabled() {
