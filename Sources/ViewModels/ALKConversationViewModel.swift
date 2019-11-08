@@ -475,7 +475,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
         return nil
     }
 
-    open func downloadAttachment(message: ALKMessageViewModel, handler: AttachmentUpdateHandler) {
+    func downloadAttachment(message: ALKMessageViewModel, handler: AttachmentUpdateHandler) {
         guard ALDataNetworkConnection.checkDataNetworkAvailable() else {
             let notificationView = ALNotificationView()
             notificationView.noDataConnectionNotificationView()
@@ -767,7 +767,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
         return (alMessage, IndexPath(row: 0, section: messageModels.count - 1))
     }
 
-    open func uploadVideo(indexPath: IndexPath, handler: AttachmentUpdateHandler) {
+    func uploadVideo(indexPath: IndexPath, handler: AttachmentUpdateHandler) {
         let alMessage = alMessages[indexPath.section]
 
         let clientService = ALMessageClientService()
@@ -941,7 +941,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
         })
     }
 
-    open func uploadImage(indexPath: IndexPath, handler: AttachmentUpdateHandler) {
+    func uploadImage(indexPath: IndexPath, handler: AttachmentUpdateHandler) {
         let alMessage = alMessages[indexPath.section]
         let clientService = ALMessageClientService()
         let messageService = ALMessageDBService()

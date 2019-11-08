@@ -37,28 +37,28 @@ struct ThumbnailIdentifier {
 }
 
 class SessionQueue {
-    public static let shared = SessionQueue()
+    static let shared = SessionQueue()
     private var queue = [URLSession]()
 
     private init() {}
 
-    public func getAllSessions() -> [URLSession] {
+    func getAllSessions() -> [URLSession] {
         return queue
     }
 
-    public func addSession(_ session: URLSession) {
+    func addSession(_ session: URLSession) {
         queue.append(session)
     }
 
-    public func containsSession(_ session: URLSession) -> Bool {
+    func containsSession(_ session: URLSession) -> Bool {
         return queue.contains(session)
     }
 
-    public func removeSession(_ session: URLSession) {
+    func removeSession(_ session: URLSession) {
         queue.remove(object: session)
     }
 
-    public func containsSession(withIdentifier: String) -> Bool {
+    func containsSession(withIdentifier: String) -> Bool {
         for session in queue {
             let config = session.configuration
             guard let id = config.identifier else { continue }
@@ -69,7 +69,7 @@ class SessionQueue {
         return false
     }
 
-    public func cancelSession(withIdentifier: String) -> Bool {
+    func cancelSession(withIdentifier: String) -> Bool {
         for session in queue {
             let config = session.configuration
             guard let id = config.identifier else { continue }

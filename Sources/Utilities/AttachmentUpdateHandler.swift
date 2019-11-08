@@ -7,7 +7,7 @@
 
 import Applozic
 
-open class AttachmentUpdateHandler: ALKHTTPManagerUploadDelegate, ALKHTTPManagerDownloadDelegate {
+class AttachmentUpdateHandler: ALKHTTPManagerUploadDelegate, ALKHTTPManagerDownloadDelegate {
     var cellForTask: ((String?) -> ALKChatBaseCell<ALKMessageViewModel>?)?
 
     func dataUploaded(task: ALKUploadTask) {
