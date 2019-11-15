@@ -309,7 +309,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
                 height = ALKFriendVideoCell.rowHeigh(viewModel: messageModel, width: maxWidth)
             }
             return height.cached(with: messageModel.identifier)
-        case .genericCard, .cardTemplate:
+        case .cardTemplate:
             if messageModel.isMyMessage {
                 return
                     ALKMyGenericCardCell
@@ -668,11 +668,9 @@ open class ALKConversationViewModel: NSObject, Localizable {
         if let messageMetadata = metadata, !messageMetadata.isEmpty {
             metaData.addEntries(from: messageMetadata)
         }
-        if metaData != nil {
-            for (key, value) in metaData {
-                guard let value = value as? [AnyHashable: Any] else { continue }
-                metaData[key] = ALUtilityClass.generateJsonString(from: value)
-            }
+        for (key, value) in metaData {
+            guard let value = value as? [AnyHashable: Any] else { continue }
+            metaData[key] = ALUtilityClass.generateJsonString(from: value)
         }
         return metaData
     }
@@ -1056,17 +1054,6 @@ open class ALKConversationViewModel: NSObject, Localizable {
         guard let index = messageModels.index(of: message)
         else { return nil }
         return IndexPath(row: 0, section: index)
-    }
-
-    open func genericTemplateFor(message: ALKMessageViewModel) -> Any? {
-        guard richMessages[message.identifier] == nil else {
-            return richMessages[message.identifier]
-        }
-        if message.messageType == .genericCard {
-            return getGenericCardTemplateFor(message: message)
-        } else {
-            return getGenericListTemplateFor(message: message)
-        }
     }
 
     open func showPoweredByMessage() -> Bool {
@@ -1538,21 +1525,6 @@ open class ALKConversationViewModel: NSObject, Localizable {
         do {
             let cards = try JSONDecoder().decode([ALKGenericCard].self, from: payload.data)
             let cardTemplate = ALKGenericCardTemplate(cards: cards)
-            richMessages[message.identifier] = cardTemplate
-            return cardTemplate
-        } catch {
-            print("\(error)")
-            return nil
-        }
-    }
-
-    private func getGenericListTemplateFor(message: ALKMessageViewModel) -> [ALKGenericListTemplate]? {
-        guard
-            let metadata = message.metadata,
-            let payload = metadata["payload"] as? String
-        else { return nil }
-        do {
-            let cardTemplate = try JSONDecoder().decode([ALKGenericListTemplate].self, from: payload.data)
             richMessages[message.identifier] = cardTemplate
             return cardTemplate
         } catch {
