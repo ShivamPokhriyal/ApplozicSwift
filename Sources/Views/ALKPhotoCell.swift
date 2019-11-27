@@ -49,6 +49,7 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
 
     fileprivate var downloadButton: UIButton = {
         let button = UIButton(type: .custom)
+        button.isHidden = true
         let image = UIImage(named: "DownloadiOS", in: Bundle.applozic, compatibleWith: nil)
         button.setImage(image, for: .normal)
         button.backgroundColor = UIColor.black
@@ -57,6 +58,7 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
 
     var uploadButton: UIButton = {
         let button = UIButton(type: .custom)
+        button.isHidden = true
         let image = UIImage(named: "UploadiOS2", in: Bundle.applozic, compatibleWith: nil)
         button.setImage(image, for: .normal)
         button.backgroundColor = UIColor.black
@@ -337,12 +339,12 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
             cancelButton.isHidden = true
             downloadButton.isHidden = true
         case let .uploading(progress):
+            downloadButton.isHidden = true
             uploadButton.isHidden = true
             frontView.isUserInteractionEnabled = false
             progressIndicator.isHidden = false
             cancelButton.isHidden = false
             progressIndicator.angle = progress
-            downloadButton.isHidden = true
         case .download:
             downloadButton.isHidden = false
             frontView.isUserInteractionEnabled = false
@@ -360,12 +362,12 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
         case let .downloaded(filePath):
             let docDirPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             let path = docDirPath.appendingPathComponent(filePath)
+            downloadButton.isHidden = true
             setPhotoViewImageFromFileURL(path)
             frontView.isUserInteractionEnabled = true
             uploadButton.isHidden = true
             progressIndicator.isHidden = true
             cancelButton.isHidden = true
-            downloadButton.isHidden = true
         }
     }
 
