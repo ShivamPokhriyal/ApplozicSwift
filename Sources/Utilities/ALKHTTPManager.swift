@@ -364,6 +364,7 @@ extension ALKHTTPManager: URLSessionDataDelegate {
             print("success == \(responseDictionary)")
 
             DispatchQueue.main.async {
+                uploadTask.uploadError = nil
                 uploadTask.completed = true
                 self.uploadCompleted?(responseDictionary, uploadTask)
                 self.uploadDelegate?.dataUploadingFinished(task: uploadTask)
@@ -434,7 +435,7 @@ extension ALKHTTPManager: URLSessionDataDelegate {
             downloadTask.isDownloading = false
             self.downloadCompleted?(downloadTask)
             self.downloadDelegate?.dataDownloadingFinished(task: downloadTask)
-            self.buffer = nil
+            self.buffer.length = 0
         }
     }
 
