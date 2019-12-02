@@ -16,6 +16,7 @@ class ALKVideoCell: ALKChatBaseCell<ALKMessageViewModel>,
         case download
         case downloading(progress: Double, totalCount: Int64)
         case downloaded(filePath: String)
+        case uploading(progress: Double)
         case upload
     }
 
@@ -61,6 +62,7 @@ class ALKVideoCell: ALKChatBaseCell<ALKMessageViewModel>,
 
     fileprivate var uploadButton: UIButton = {
         let button = UIButton(type: .custom)
+        button.isHidden = true
         let image = UIImage(named: "UploadiOS2", in: Bundle.applozic, compatibleWith: nil)
         button.setImage(image, for: .normal)
         button.backgroundColor = UIColor.black
@@ -142,7 +144,7 @@ class ALKVideoCell: ALKChatBaseCell<ALKMessageViewModel>,
                 }
             } else {
                 if SessionQueue.shared.containsSession(withIdentifier: viewModel.identifier) {
-                    updateView(for: State.downloading(progress: 0, totalCount: 0))
+                    updateView(for: State.uploading(progress: 0))
                 } else {
                     updateView(for: State.upload)
                 }
@@ -175,8 +177,6 @@ class ALKVideoCell: ALKChatBaseCell<ALKMessageViewModel>,
         super.setupViews()
         playButton.isHidden = true
         progressView.isHidden = true
-        uploadButton.isHidden = true
-
         frontView.addGestureRecognizer(longPressGesture)
         actionButton.addTarget(self, action: #selector(actionTapped), for: .touchUpInside)
         downloadButton.addTarget(self, action: #selector(buttonAction(_:)), for: .touchUpInside)
@@ -322,6 +322,14 @@ class ALKVideoCell: ALKChatBaseCell<ALKMessageViewModel>,
             playButton.isHidden = true
             photoView.image = UIImage(named: "VIDEO", in: Bundle.applozic, compatibleWith: nil)
             uploadButton.isHidden = false
+        case .uploading(let progress):
+            downloadButton.isHidden = true
+            uploadButton.isHidden = true
+            frontView.isUserInteractionEnabled = false
+            progressView.isHidden = false
+            cancelButton.isHidden = false
+            playButton.isHidden = true
+            progressView.angle = progress
         }
     }
 }

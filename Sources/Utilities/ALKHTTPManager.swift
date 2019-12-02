@@ -365,6 +365,7 @@ extension ALKHTTPManager: URLSessionDataDelegate {
 
             DispatchQueue.main.async {
                 uploadTask.uploadError = nil
+                self.uploadTask?.uploadError = nil
                 uploadTask.completed = true
                 self.uploadCompleted?(responseDictionary, uploadTask)
                 self.uploadDelegate?.dataUploadingFinished(task: uploadTask)
