@@ -49,7 +49,6 @@ class ALKPhotoCell: ALKChatBaseCell<ALKMessageViewModel>,
 
     fileprivate var downloadButton: UIButton = {
         let button = UIButton(type: .custom)
-        button.isHidden = true
         let image = UIImage(named: "DownloadiOS", in: Bundle.applozic, compatibleWith: nil)
         button.setImage(image, for: .normal)
         button.backgroundColor = UIColor.black

@@ -322,7 +322,7 @@ class ALKVideoCell: ALKChatBaseCell<ALKMessageViewModel>,
             playButton.isHidden = true
             photoView.image = UIImage(named: "VIDEO", in: Bundle.applozic, compatibleWith: nil)
             uploadButton.isHidden = false
-        case .uploading(let progress):
+        case let .uploading(progress):
             downloadButton.isHidden = true
             uploadButton.isHidden = true
             frontView.isUserInteractionEnabled = false
