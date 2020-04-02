@@ -184,6 +184,9 @@ public class ALKLinkPreview: NSObject, URLSessionDelegate {
         if url.starts(with: "//") {
             return "http:" + url
         } else if url.starts(with: "/") {
+            if  baseUrl.starts(with: "http://") || baseUrl.starts(with: "https://") {
+                return baseUrl + url
+            }
             return "http://" + baseUrl + url
         } else {
             return url

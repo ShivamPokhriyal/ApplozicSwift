@@ -122,7 +122,8 @@ class ALKLinkView: UIView {
 
     func update(linkViewModel: LinkPreviewMeta) {
         let placeHolder = UIImage(named: "default_image", in: Bundle.applozic, compatibleWith: nil)
-        if let stringURL = linkViewModel.icon, let url = URL(string: stringURL) {
+
+        if let stringURL = linkViewModel.image ?? linkViewModel.icon, let url = URL(string: stringURL) {
             let resource = ImageResource(downloadURL: url, cacheKey: url.absoluteString)
             previewImageView.kf.setImage(with: resource, placeholder: placeHolder)
         } else {
