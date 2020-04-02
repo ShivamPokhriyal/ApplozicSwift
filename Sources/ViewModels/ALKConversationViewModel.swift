@@ -264,16 +264,31 @@ open class ALKConversationViewModel: NSObject, Localizable {
         }
         switch messageModel.messageType {
         case .text, .html, .email:
-            if messageModel.isMyMessage {
-                let height = ALKMyMessageCell.rowHeigh(viewModel: messageModel, width: maxWidth, displayNames: { userIds in
-                    self.displayNames(ofUserIds: userIds)
-                })
-                return height.cached(with: cacheIdentifier)
+
+            if messageModel.messageType == .text, ALKLinkPreview.extractURL(from: messageModel.message) != nil {
+                if messageModel.isMyMessage {
+                    let height = ALKMyLinkPreviewCell.rowHeigh(viewModel: messageModel, width: maxWidth, displayNames: { userIds in
+                        self.displayNames(ofUserIds: userIds)
+                    })
+                    return height.cached(with: cacheIdentifier)
+                } else {
+                    let height = ALKFriendLinkPreviewCell.rowHeigh(viewModel: messageModel, width: maxWidth, displayNames: { userIds in
+                        self.displayNames(ofUserIds: userIds)
+                    })
+                    return height.cached(with: cacheIdentifier)
+                }
             } else {
-                let height = ALKFriendMessageCell.rowHeigh(viewModel: messageModel, width: maxWidth, displayNames: { userIds in
-                    self.displayNames(ofUserIds: userIds)
-                })
-                return height.cached(with: cacheIdentifier)
+                if messageModel.isMyMessage {
+                    let height = ALKMyMessageCell.rowHeigh(viewModel: messageModel, width: maxWidth, displayNames: { userIds in
+                        self.displayNames(ofUserIds: userIds)
+                    })
+                    return height.cached(with: cacheIdentifier)
+                } else {
+                    let height = ALKFriendMessageCell.rowHeigh(viewModel: messageModel, width: maxWidth, displayNames: { userIds in
+                        self.displayNames(ofUserIds: userIds)
+                    })
+                    return height.cached(with: cacheIdentifier)
+                }
             }
         case .photo:
             if messageModel.isMyMessage {

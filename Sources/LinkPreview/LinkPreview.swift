@@ -1,11 +1,11 @@
 import Foundation
 
-public class LinkPreviewResponse {
-    public var title: String?
-    public var description: String?
-    public var image: String?
-    public var icon: String?
-    public var url: URL?
+class LinkPreviewResponse {
+    var title: String?
+    var description: String?
+    var image: String?
+    var icon: String?
+    var url: URL?
 }
 
 extension LinkPreviewResponse {

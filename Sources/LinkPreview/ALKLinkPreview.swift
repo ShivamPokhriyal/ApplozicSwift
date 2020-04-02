@@ -15,8 +15,8 @@ public class ALKLinkPreview: NSObject, URLSessionDelegate {
         self.responseMainQueue = responseMainQueue
     }
 
-    public func makePreview(from text: String, _ completion: @escaping (Result<LinkPreviewResponse, LinkPreviewFailure>) -> Void) {
-        guard let url = extractURL(from: text) else {
+    public func makePreview(from text: String, _ completion: @escaping (Result<LinkPreviewMeta, LinkPreviewFailure>) -> Void) {
+        guard let url = ALKLinkPreview.extractURL(from: text) else {
             responseMainQueue.async {
                 completion(.failure(.noURLFound))
             }
@@ -42,7 +42,7 @@ public class ALKLinkPreview: NSObject, URLSessionDelegate {
                     return
                 }
 
-                var linkPreview: LinkPreviewResponse?
+                var linkPreview: LinkPreviewMeta?
 
                 if let data = data, let urlResponse = response,
                     let encoding = urlResponse.textEncodingName,
@@ -50,7 +50,7 @@ public class ALKLinkPreview: NSObject, URLSessionDelegate {
                     linkPreview = weakSelf.parseHtml(text: source as String, baseUrl: url.absoluteString)
 
                 } else {
-                    guard let data = data, let _ = response else {
+                    guard let data = data, response != nil else {
                         return
                     }
                     let htmlString = String(data: data, encoding: .utf8)
@@ -80,10 +80,10 @@ public class ALKLinkPreview: NSObject, URLSessionDelegate {
             .deleteTagByPattern(Regex.commentPattern)
     }
 
-    private func parseHtml(text: String?, baseUrl: String) -> LinkPreviewResponse? {
+    private func parseHtml(text: String?, baseUrl: String) -> LinkPreviewMeta? {
         guard let text = text else { return nil }
         let cleanHtml = cleanUnwantedTags(from: text)
-        var result = LinkPreviewResponse()
+        var result = LinkPreviewMeta()
         result.icon = parseIcon(in: text, baseUrl: baseUrl)
         result.url = URL(string: baseUrl)
         var linkFreeHtml = cleanHtml.deleteTagByPattern(Regex.linkPattern)
@@ -94,13 +94,13 @@ public class ALKLinkPreview: NSObject, URLSessionDelegate {
         return result
     }
 
-    private func parseMetaTags(in text: inout String, result: inout LinkPreviewResponse) {
+    private func parseMetaTags(in text: inout String, result: inout LinkPreviewMeta) {
         let tags = Regex.pregMatchAll(text, pattern: Regex.metatagPattern, index: 1)
 
         let possibleTags: [String] = [
-            LinkPreviewResponse.Key.title.rawValue,
-            LinkPreviewResponse.Key.description.rawValue,
-            LinkPreviewResponse.Key.image.rawValue,
+            LinkPreviewMeta.Key.title.rawValue,
+            LinkPreviewMeta.Key.description.rawValue,
+            LinkPreviewMeta.Key.image.rawValue,
         ]
         for metatag in tags {
             for tag in possibleTags {
@@ -112,7 +112,7 @@ public class ALKLinkPreview: NSObject, URLSessionDelegate {
                     metatag.range(of: "name='\(tag)") != nil ||
                     metatag.range(of: "itemprop=\"\(tag)") != nil ||
                     metatag.range(of: "itemprop='\(tag)") != nil {
-                    if let key = LinkPreviewResponse.Key(rawValue: tag),
+                    if let key = LinkPreviewMeta.Key(rawValue: tag),
                         result.value(for: key) == nil {
                         if let value = Regex.pregMatchFirst(metatag, pattern: Regex.metatagContentPattern, index: 2) {
                             let value = value.decodedHtml.extendedTrim
@@ -147,7 +147,7 @@ public class ALKLinkPreview: NSObject, URLSessionDelegate {
         return nil
     }
 
-    private func parseTitle(_ htmlCode: inout String, result: inout LinkPreviewResponse) {
+    private func parseTitle(_ htmlCode: inout String, result: inout LinkPreviewMeta) {
         let title = result.title
         if title == nil || title?.isEmpty ?? true {
             if let value = Regex.pregMatchFirst(htmlCode, pattern: Regex.titlePattern, index: 2) {
@@ -164,7 +164,7 @@ public class ALKLinkPreview: NSObject, URLSessionDelegate {
         }
     }
 
-    private func parseDescription(_ htmlCode: String, result: inout LinkPreviewResponse) {
+    private func parseDescription(_ htmlCode: String, result: inout LinkPreviewMeta) {
         let description = result.description
 
         if description == nil || description?.isEmpty ?? true {
@@ -202,11 +202,14 @@ public class ALKLinkPreview: NSObject, URLSessionDelegate {
 
     /// Returns the very first url encountered in the text.
     /// - Parameter text: text from which url is to be search
-    private func extractURL(from text: String) -> URL? {
+    class func extractURL(from text: String?) -> URL? {
+        guard let message = text else {
+            return nil
+        }
         do {
             let detector = try NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
-            let range = NSRange(location: 0, length: text.utf16.count)
-            let matches = detector.matches(in: text, options: [], range: range)
+            let range = NSRange(location: 0, length: message.utf16.count)
+            let matches = detector.matches(in: message, options: [], range: range)
             return matches.compactMap { $0.url }.first
         } catch {
             return nil
@@ -239,7 +242,7 @@ public class ALKLinkPreview: NSObject, URLSessionDelegate {
         let rawMatches = Regex.pregMatchAll(content, pattern: pattern, index: index)
 
         let matches = rawMatches.filter { $0.extendedTrim.deleteTagByPattern(Regex.rawTagPattern).count >= minimum }
-        var result = matches.count > 0 ? matches[0] : ""
+        var result = !matches.isEmpty ? matches[0] : ""
 
         if result.isEmpty {
             if let match = Regex.pregMatchFirst(content, pattern: pattern, index: 2) {

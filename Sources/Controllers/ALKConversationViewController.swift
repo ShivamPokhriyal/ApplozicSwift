@@ -646,7 +646,6 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
         tableView.register(ALKFriendListTemplateCell.self)
         tableView.register(ALKMyDocumentCell.self)
         tableView.register(ALKFriendDocumentCell.self)
-        tableView.register(ALKMyDocumentCell.self)
         tableView.register(ALKMyContactMessageCell.self)
         tableView.register(ALKFriendContactMessageCell.self)
         tableView.register(SentImageMessageCell.self)
@@ -655,6 +654,9 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
         tableView.register(SentFAQMessageCell.self)
         tableView.register(SentButtonsCell.self)
         tableView.register(ReceivedButtonsCell.self)
+
+        tableView.register(ALKMyLinkPreviewCell.self)
+        tableView.register(ALKFriendLinkPreviewCell.self)
     }
 
     private func prepareMoreBar() {

@@ -73,9 +73,46 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
         }
         switch message.messageType {
         case .text, .html, .email:
+
+            guard message.messageType == .text, let url = ALKLinkPreview.extractURL(from: message.message) else {
+                if message.isMyMessage {
+                    let cell: ALKMyMessageCell = tableView.dequeueReusableCell(forIndexPath: indexPath)
+                    cell.showReport = false
+                    cell.setLocalizedStringFileName(configuration.localizedStringFileName)
+                    cell.displayNames = { [weak self] userIds in
+                        self?.viewModel.displayNames(ofUserIds: userIds)
+                    }
+                    cell.update(viewModel: message)
+                    cell.update(chatBar: chatBar)
+                    cell.menuAction = { [weak self] action in
+                        self?.menuItemSelected(action: action, message: message)
+                    }
+                    return cell
+
+                } else {
+                    let cell: ALKFriendMessageCell = tableView.dequeueReusableCell(forIndexPath: indexPath)
+                    cell.setLocalizedStringFileName(configuration.localizedStringFileName)
+                    cell.showReport = configuration.isReportMessageEnabled
+                    cell.displayNames = { [weak self] userIds in
+                        self?.viewModel.displayNames(ofUserIds: userIds)
+                    }
+                    cell.update(viewModel: message)
+                    cell.update(chatBar: chatBar)
+                    cell.avatarTapped = { [weak self] in
+                        guard let currentModel = cell.viewModel else { return }
+                        self?.messageAvatarViewDidTap(messageVM: currentModel, indexPath: indexPath)
+                    }
+                    cell.menuAction = { [weak self] action in
+                        self?.menuItemSelected(action: action, message: message)
+                    }
+                    return cell
+                }
+            }
+
             if message.isMyMessage {
-                let cell: ALKMyMessageCell = tableView.dequeueReusableCell(forIndexPath: indexPath)
+                let cell: ALKMyLinkPreviewCell = tableView.dequeueReusableCell(forIndexPath: indexPath)
                 cell.showReport = false
+                cell.url = url.absoluteString
                 cell.setLocalizedStringFileName(configuration.localizedStringFileName)
                 cell.displayNames = { [weak self] userIds in
                     self?.viewModel.displayNames(ofUserIds: userIds)
@@ -89,7 +126,8 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                 return cell
 
             } else {
-                let cell: ALKFriendMessageCell = tableView.dequeueReusableCell(forIndexPath: indexPath)
+                let cell: ALKFriendLinkPreviewCell = tableView.dequeueReusableCell(forIndexPath: indexPath)
+                cell.url = url.absoluteString
                 cell.setLocalizedStringFileName(configuration.localizedStringFileName)
                 cell.showReport = configuration.isReportMessageEnabled
                 cell.displayNames = { [weak self] userIds in
