@@ -73,8 +73,7 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
         }
         switch message.messageType {
         case .text, .html, .email:
-
-            guard message.messageType == .text, let url = ALKLinkPreview.extractURL(from: message.message) else {
+            guard !configuration.isLinkPreviewDisabled, message.messageType == .text, let url = ALKLinkPreview.extractURL(from: message.message) else {
                 if message.isMyMessage {
                     let cell: ALKMyMessageCell = tableView.dequeueReusableCell(forIndexPath: indexPath)
                     cell.showReport = false
@@ -547,7 +546,7 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
     }
 
     public func tableView(_: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return viewModel.heightForRow(indexPath: indexPath, cellFrame: view.frame)
+        return viewModel.heightForRow(indexPath: indexPath, cellFrame: view.frame, configuration: self.configuration)
     }
 
     public func tableView(_: UITableView, heightForHeaderInSection section: Int) -> CGFloat {

@@ -256,7 +256,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
         return messageModels.firstIndex { $0.identifier == identifier }
     }
 
-    open func heightForRow(indexPath: IndexPath, cellFrame _: CGRect) -> CGFloat {
+    open func heightForRow(indexPath: IndexPath, cellFrame _: CGRect, configuration: ALKConfiguration) -> CGFloat {
         let messageModel = messageModels[indexPath.section]
         let cacheIdentifier = (messageModel.isMyMessage ? "s-" : "r-") + messageModel.identifier
         if let height = HeightCache.shared.getHeight(for: cacheIdentifier) {
@@ -264,20 +264,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
         }
         switch messageModel.messageType {
         case .text, .html, .email:
-
-            if messageModel.messageType == .text, ALKLinkPreview.extractURL(from: messageModel.message) != nil {
-                if messageModel.isMyMessage {
-                    let height = ALKMyLinkPreviewCell.rowHeigh(viewModel: messageModel, width: maxWidth, displayNames: { userIds in
-                        self.displayNames(ofUserIds: userIds)
-                    })
-                    return height.cached(with: cacheIdentifier)
-                } else {
-                    let height = ALKFriendLinkPreviewCell.rowHeigh(viewModel: messageModel, width: maxWidth, displayNames: { userIds in
-                        self.displayNames(ofUserIds: userIds)
-                    })
-                    return height.cached(with: cacheIdentifier)
-                }
-            } else {
+            guard !configuration.isLinkPreviewDisabled, messageModel.messageType == .text, ALKLinkPreview.extractURL(from: messageModel.message) != nil else {
                 if messageModel.isMyMessage {
                     let height = ALKMyMessageCell.rowHeigh(viewModel: messageModel, width: maxWidth, displayNames: { userIds in
                         self.displayNames(ofUserIds: userIds)
@@ -290,6 +277,18 @@ open class ALKConversationViewModel: NSObject, Localizable {
                     return height.cached(with: cacheIdentifier)
                 }
             }
+            if messageModel.isMyMessage {
+                let height = ALKMyLinkPreviewCell.rowHeigh(viewModel: messageModel, width: maxWidth, displayNames: { userIds in
+                    self.displayNames(ofUserIds: userIds)
+                })
+                return height.cached(with: cacheIdentifier)
+            } else {
+                let height = ALKFriendLinkPreviewCell.rowHeigh(viewModel: messageModel, width: maxWidth, displayNames: { userIds in
+                    self.displayNames(ofUserIds: userIds)
+                })
+                return height.cached(with: cacheIdentifier)
+            }
+
         case .photo:
             if messageModel.isMyMessage {
                 if messageModel.ratio < 1 {

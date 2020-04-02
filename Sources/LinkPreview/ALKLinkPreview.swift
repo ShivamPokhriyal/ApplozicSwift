@@ -1,6 +1,6 @@
 import Foundation
 
-public class ALKLinkPreview: NSObject, URLSessionDelegate {
+class ALKLinkPreview: NSObject, URLSessionDelegate {
     enum TextMinimumLength {
         static let title: Int = 15
         static let decription: Int = 100
@@ -9,13 +9,13 @@ public class ALKLinkPreview: NSObject, URLSessionDelegate {
     private let workBckQueue: DispatchQueue
     private let responseMainQueue: DispatchQueue
 
-    public init(workBckQueue: DispatchQueue = DispatchQueue.global(qos: .background),
-                responseMainQueue: DispatchQueue = DispatchQueue.main) {
+    init(workBckQueue: DispatchQueue = DispatchQueue.global(qos: .background),
+         responseMainQueue: DispatchQueue = DispatchQueue.main) {
         self.workBckQueue = workBckQueue
         self.responseMainQueue = responseMainQueue
     }
 
-    public func makePreview(from text: String, _ completion: @escaping (Result<LinkPreviewMeta, LinkPreviewFailure>) -> Void) {
+    func makePreview(from text: String, _ completion: @escaping (Result<LinkPreviewMeta, LinkPreviewFailure>) -> Void) {
         guard let url = ALKLinkPreview.extractURL(from: text) else {
             responseMainQueue.async {
                 completion(.failure(.noURLFound))
@@ -34,7 +34,6 @@ public class ALKLinkPreview: NSObject, URLSessionDelegate {
             let request = URLRequest(url: url)
             let session = URLSession(configuration: URLSessionConfiguration.default, delegate: self, delegateQueue: nil)
             session.dataTask(with: request) { [weak self] data, response, error in
-
                 guard let weakSelf = self, error == nil else {
                     self?.responseMainQueue.async {
                         completion(.failure(.cannotBeOpened))
@@ -47,17 +46,19 @@ public class ALKLinkPreview: NSObject, URLSessionDelegate {
                 if let data = data, let urlResponse = response,
                     let encoding = urlResponse.textEncodingName,
                     let source = NSString(data: data, encoding: CFStringConvertEncodingToNSStringEncoding(CFStringConvertIANACharSetNameToEncoding(encoding as CFString))) {
-                    linkPreview = weakSelf.parseHtml(text: source as String, baseUrl: url.absoluteString)
+                    linkPreview = weakSelf.parseHtmlAndUpdateLinkPreviewMeta(text: source as String, baseUrl: url.absoluteString)
 
                 } else {
                     guard let data = data, response != nil else {
                         return
                     }
                     let htmlString = String(data: data, encoding: .utf8)
-                    linkPreview = weakSelf.parseHtml(text: htmlString, baseUrl: weakSelf.extractBaseUrl(url.absoluteString))
+                    linkPreview = weakSelf.parseHtmlAndUpdateLinkPreviewMeta(text: htmlString, baseUrl: weakSelf.extractBaseUrl(url.absoluteString))
                 }
                 guard let linkPreviewData = linkPreview else {
-                    completion(.failure(.noURLFound))
+                    weakSelf.responseMainQueue.async {
+                        completion(.failure(.parseError))
+                    }
                     return
                 }
                 if let url = linkPreviewData.url?.absoluteString {
@@ -80,7 +81,7 @@ public class ALKLinkPreview: NSObject, URLSessionDelegate {
             .deleteTagByPattern(Regex.commentPattern)
     }
 
-    private func parseHtml(text: String?, baseUrl: String) -> LinkPreviewMeta? {
+    private func parseHtmlAndUpdateLinkPreviewMeta(text: String?, baseUrl: String) -> LinkPreviewMeta? {
         guard let text = text else { return nil }
         let cleanHtml = cleanUnwantedTags(from: text)
         var result = LinkPreviewMeta()
@@ -184,7 +185,7 @@ public class ALKLinkPreview: NSObject, URLSessionDelegate {
         if url.starts(with: "//") {
             return "http:" + url
         } else if url.starts(with: "/") {
-            if  baseUrl.starts(with: "http://") || baseUrl.starts(with: "https://") {
+            if baseUrl.starts(with: "http://") || baseUrl.starts(with: "https://") {
                 return baseUrl + url
             }
             return "http://" + baseUrl + url

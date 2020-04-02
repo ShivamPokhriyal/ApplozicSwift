@@ -1,6 +1,6 @@
 import Foundation
 
-public enum LinkPreviewFailure: Error {
+enum LinkPreviewFailure: Error {
     case noURLFound
     case invalidURL
     case cannotBeOpened

@@ -1,6 +1,6 @@
 import Foundation
 
-public class LinkPreviewMeta {
+class LinkPreviewMeta {
     public var title: String?
     public var description: String?
     public var image: String?
