@@ -1,3 +1,4 @@
+import Applozic
 import Foundation
 
 class ALKLinkPreviewBaseCell: ALKChatBaseCell<ALKMessageViewModel> {
@@ -82,7 +83,9 @@ class ALKLinkPreviewBaseCell: ALKChatBaseCell<ALKMessageViewModel> {
              timeLabel])
         contentView.bringSubviewToFront(linkView)
         contentView.bringSubviewToFront(messageView)
-        linkView.frontView.addGestureRecognizer(longPressGesture)
+
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(openUrl))
+        linkView.frontView.addGestureRecognizer(tapGesture)
         bubbleView.addGestureRecognizer(longPressGesture)
     }
 
@@ -141,6 +144,14 @@ class ALKLinkPreviewBaseCell: ALKChatBaseCell<ALKMessageViewModel> {
             print("😱😱😱Shouldn't come here.😱😱😱")
             return 0
         }
+    }
+
+    @objc private func openUrl() {
+        let pushAssistant = ALPushAssist()
+        guard let topVC = pushAssistant.topViewController,
+            let stringURL = url, let openURL = URL(string: stringURL) else { return }
+        let vc = ALKWebViewController(htmlString: nil, url: openURL, title: "")
+        topVC.navigationController?.pushViewController(vc, animated: true)
     }
 }
 

@@ -8,6 +8,7 @@ The changelog for [ApplozicSwift](https://github.com/AppLozic/ApplozicSwift). Al
 ### Enhancements
 
 - [CM-193] Added support to open the application when tapping any URL in the text message. If the application isn't installed, we'll open it in Safari.
+- Show link preview in chat for web links
 
 ### Fixes
 

@@ -134,7 +134,7 @@ class ALKLinkPreview: NSObject, URLSessionDelegate {
 
     private func parseIcon(in text: String, baseUrl: String) -> String? {
         let links = Regex.pregMatchAll(text, pattern: Regex.linkPattern, index: 1)
-        let filters = [ { (link: String) -> Bool
+        let filters = [{ (link: String) -> Bool
                 in link.range(of: "apple-touch") != nil
         }, { (link: String) -> Bool
             in link.range(of: "shortcut") != nil
