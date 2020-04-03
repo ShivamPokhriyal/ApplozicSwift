@@ -20,40 +20,40 @@ class ALKFriendLinkPreviewCell: ALKLinkPreviewBaseCell {
         return label
     }()
 
-    struct Padding {
-        struct NameLabel {
+    enum Padding {
+        enum NameLabel {
             static let top: CGFloat = 6.0
             static let left: CGFloat = 57.0
             static let right: CGFloat = 57.0
             static let height: CGFloat = 16.0
         }
 
-        struct AvatarImage {
+        enum AvatarImage {
             static let top: CGFloat = 18.0
             static let left: CGFloat = 9.0
             static let width: CGFloat = 37.0
             static let height: CGFloat = 37.0
         }
 
-        struct BubbleView {
+        enum BubbleView {
             static let left: CGFloat = 5.0
             static let right: CGFloat = 95.0
             static let bottom: CGFloat = 5.0
         }
 
-        struct MessageView {
+        enum MessageView {
             static let top: CGFloat = 5
             static let bottom: CGFloat = 10
         }
 
-        struct LinkView {
-            static let top: CGFloat = 5
-            static let bottom: CGFloat = 5
-            static let left: CGFloat = 5
-            static let right: CGFloat = 5
+        enum LinkView {
+            static let top: CGFloat = 5.0
+            static let bottom: CGFloat = 5.0
+            static let left: CGFloat = 5.0
+            static let right: CGFloat = 5.0
         }
 
-        struct TimeLabel {
+        enum TimeLabel {
             static let bottom: CGFloat = 2
             static let left: CGFloat = 10
         }

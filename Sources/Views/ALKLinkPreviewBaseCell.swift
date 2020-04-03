@@ -58,9 +58,7 @@ class ALKLinkPreviewBaseCell: ALKChatBaseCell<ALKMessageViewModel> {
         mentionStyle: Style
     ) {
         linkView.setLocalizedStringFileName(localizedStringFileName)
-
         self.viewModel = viewModel
-
         timeLabel.text = viewModel.time
         resetTextView(messageStyle)
         guard viewModel.message != nil else { return }
@@ -77,12 +75,14 @@ class ALKLinkPreviewBaseCell: ALKChatBaseCell<ALKMessageViewModel> {
 
     override func setupViews() {
         super.setupViews()
+        linkView.isUserInteractionEnabled = true
         contentView.addViewsForAutolayout(views:
             [messageView, linkView,
              bubbleView,
              timeLabel])
         contentView.bringSubviewToFront(linkView)
         contentView.bringSubviewToFront(messageView)
+        linkView.frontView.addGestureRecognizer(longPressGesture)
         bubbleView.addGestureRecognizer(longPressGesture)
     }
 
@@ -141,5 +141,19 @@ class ALKLinkPreviewBaseCell: ALKChatBaseCell<ALKMessageViewModel> {
             print("😱😱😱Shouldn't come here.😱😱😱")
             return 0
         }
+    }
+}
+
+extension ALKLinkPreviewBaseCell: ALKCopyMenuItemProtocol, ALKReplyMenuItemProtocol, ALKReportMessageMenuItemProtocol {
+    func menuCopy(_: Any) {
+        UIPasteboard.general.string = viewModel?.message ?? ""
+    }
+
+    func menuReply(_: Any) {
+        menuAction?(.reply)
+    }
+
+    func menuReport(_: Any) {
+        menuAction?(.reportMessage)
     }
 }

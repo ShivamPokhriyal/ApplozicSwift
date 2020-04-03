@@ -134,11 +134,13 @@ class ALKLinkPreview: NSObject, URLSessionDelegate {
 
     private func parseIcon(in text: String, baseUrl: String) -> String? {
         let links = Regex.pregMatchAll(text, pattern: Regex.linkPattern, index: 1)
-        let filters = [
-            { (link: String) -> Bool in link.range(of: "apple-touch") != nil },
-            { (link: String) -> Bool in link.range(of: "shortcut") != nil },
-            { (link: String) -> Bool in link.range(of: "icon") != nil },
-        ]
+        let filters = [ { (link: String) -> Bool
+                in link.range(of: "apple-touch") != nil
+        }, { (link: String) -> Bool
+            in link.range(of: "shortcut") != nil
+        }, { (link: String) -> Bool
+            in link.range(of: "icon") != nil
+        }]
         for filter in filters {
             guard let link = links.filter(filter).first else { continue }
             if let matches = Regex.pregMatchFirst(link, pattern: Regex.hrefPattern, index: 1) {

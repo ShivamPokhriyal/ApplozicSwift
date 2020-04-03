@@ -8,7 +8,7 @@ class ALKLinkView: UIView {
         self.localizedStringFileName = localizedStringFileName
     }
 
-    let loadingIndicator = ALKLoadingIndicator(frame: .zero, color: UIColor.red)
+    let loadingIndicator = ALKLoadingIndicator(frame: .zero, color: UIColor.gray)
     enum CommonPadding {
         enum PreviewImageView {
             static let top: CGFloat = 5
@@ -40,6 +40,13 @@ class ALKLinkView: UIView {
         return label
     }()
 
+    var frontView: ALKTappableView = {
+        let view = ALKTappableView()
+        view.isUserInteractionEnabled = true
+        view.backgroundColor = .clear
+        return view
+    }()
+
     var descriptionLabel: UILabel = {
         let label = UILabel(frame: CGRect.zero)
         label.numberOfLines = 2
@@ -51,7 +58,7 @@ class ALKLinkView: UIView {
 
     let previewImageView: UIImageView = {
         let imageView = UIImageView(frame: CGRect.zero)
-        imageView.image = UIImage(named: "placeholder", in: Bundle.applozic, compatibleWith: nil)
+        imageView.image = UIImage(named: "default_image", in: Bundle.applozic, compatibleWith: nil)
         imageView.backgroundColor = .clear
         return imageView
     }()
@@ -66,7 +73,14 @@ class ALKLinkView: UIView {
     }
 
     func setupConstraints() {
-        addViewsForAutolayout(views: [titleLabel, descriptionLabel, previewImageView, loadingIndicator])
+        addViewsForAutolayout(views: [titleLabel, descriptionLabel, previewImageView, loadingIndicator, frontView])
+
+        bringSubviewToFront(frontView)
+
+        frontView.topAnchor.constraint(equalTo: topAnchor).isActive = true
+        frontView.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
+        frontView.trailingAnchor.constraint(equalTo: trailingAnchor).isActive = true
+        frontView.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
 
         previewImageView.topAnchor.constraint(equalTo: topAnchor, constant: CommonPadding.PreviewImageView.top).isActive = true
         previewImageView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: CommonPadding.PreviewImageView.leading).isActive = true
