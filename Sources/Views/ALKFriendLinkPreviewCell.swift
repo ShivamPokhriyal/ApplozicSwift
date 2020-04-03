@@ -48,9 +48,8 @@ class ALKFriendLinkPreviewCell: ALKLinkPreviewBaseCell {
 
         enum LinkView {
             static let top: CGFloat = 5.0
-            static let bottom: CGFloat = 5.0
-            static let left: CGFloat = 5.0
-            static let right: CGFloat = 5.0
+            static let left: CGFloat = 10.0
+            static let right: CGFloat = 8.0
         }
 
         enum TimeLabel {

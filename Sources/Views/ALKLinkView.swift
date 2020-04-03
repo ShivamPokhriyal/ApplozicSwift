@@ -65,16 +65,18 @@ class ALKLinkView: UIView {
 
     init() {
         super.init(frame: .zero)
-        setupConstraints()
+        setupConstraintAndView()
     }
 
     required init?(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func setupConstraints() {
+    func setupConstraintAndView() {
         addViewsForAutolayout(views: [titleLabel, descriptionLabel, previewImageView, loadingIndicator, frontView])
-
+        layer.borderWidth = 0.5
+        layer.borderColor = UIColor.lightGray.cgColor
+        clipsToBounds = true
         bringSubviewToFront(frontView)
 
         frontView.topAnchor.constraint(equalTo: topAnchor).isActive = true
