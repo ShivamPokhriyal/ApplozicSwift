@@ -35,7 +35,6 @@ class ALKLinkView: UIView {
     var titleLabel: UILabel = {
         let label = UILabel(frame: CGRect.zero)
         label.font = UIFont.font(.bold(size: 14))
-        label.text = "This title is now"
         label.numberOfLines = 2
         return label
     }()
@@ -50,7 +49,6 @@ class ALKLinkView: UIView {
     var descriptionLabel: UILabel = {
         let label = UILabel(frame: CGRect.zero)
         label.numberOfLines = 2
-        label.text = "This description Label"
         label.textColor = UIColor.lightGray
         label.font = UIFont.font(.normal(size: 12))
         return label
