@@ -9,6 +9,10 @@ The changelog for [ApplozicSwift](https://github.com/AppLozic/ApplozicSwift). Al
 
 - [CM-193] Added support to open the application when tapping any URL in the text message. If the application isn't installed, we'll open it in Safari.
 - Show link preview in chat for web links
+</br>You can use below config to disable web link preview in chat:
+```
+    config.isLinkPreviewDisabled = true
+```
 
 ### Fixes
 
