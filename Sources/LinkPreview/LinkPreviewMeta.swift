@@ -1,11 +1,15 @@
 import Foundation
 
 class LinkPreviewMeta {
-    public var title: String?
-    public var description: String?
-    public var image: String?
-    public var icon: String?
-    public var url: URL?
+    var title: String?
+    var description: String?
+    var image: String?
+    var icon: String?
+    var url: URL
+
+    init(url: URL) {
+        self.url = url
+    }
 }
 
 extension LinkPreviewMeta {

@@ -1,21 +1,42 @@
 import Foundation
 
 class Regex {
-    static let imagePattern = "(.+?)\\.(gif|jpg|jpeg|png|bmp)$"
-    static let videoTagPattern = "<video[^>]+src=\"([^\"]+)"
-    static let imageTagPattern = "<img(.+?)src=\"([^\"](.+?))\"(.+?)[/]?>"
-    static let titlePattern = "<title(.*?)>(.*?)</title>"
-    static let metatagPattern = "<meta(.*?)>"
-    static let metatagContentPattern = "content=(\"(.*?)\")|('(.*?)')"
-    static let cannonicalUrlPattern = "([^\\+&#@%\\?=~_\\|!:,;]+)"
-    static let rawTagPattern = "<[^>]+>"
-    static let inlineStylePattern = "<style(.*?)>(.*?)</style>"
-    static let inlineScriptPattern = "<script(.*?)>(.*?)</script>"
-    static let linkPattern = "<link(.*?)>"
-    static let scriptPattern = "<script(.*?)>"
-    static let commentPattern = "<!--(.*?)-->"
-    static let hrefPattern = ".*href=\"(.*?)\".*"
-    static let pricePattern = "itemprop=\"price\" content=\"([^\"]*)\""
+    enum Pattern {
+        enum Image {
+            static let type = "(.+?)\\.(gif|jpg|jpeg|png|bmp)$"
+            static let href = ".*href=\"(.*?)\".*"
+        }
+
+        enum Title {
+            static let tag = "<title(.*?)>(.*?)</title>"
+        }
+
+        enum Meta {
+            static let tag = "<meta(.*?)>"
+            static let content = "content=(\"(.*?)\")|('(.*?)')"
+        }
+
+        enum Raw {
+            static let tag = "<[^>]+>"
+        }
+
+        enum InLine {
+            static let style = "<style(.*?)>(.*?)</style>"
+            static let script = "<script(.*?)>(.*?)</script>"
+        }
+
+        enum Link {
+            static let tag = "<link(.*?)>"
+        }
+
+        enum Script {
+            static let tag = "<script(.*?)>(.*?)</script>"
+        }
+
+        enum Comment {
+            static let tag = "<!--(.*?)-->"
+        }
+    }
 
     // Check the regular expression
     static func isMatchFound(_ string: String, regex: String) -> Bool {

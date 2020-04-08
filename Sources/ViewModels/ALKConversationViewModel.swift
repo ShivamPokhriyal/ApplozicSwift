@@ -264,7 +264,7 @@ open class ALKConversationViewModel: NSObject, Localizable {
         }
         switch messageModel.messageType {
         case .text, .html, .email:
-            guard !configuration.isLinkPreviewDisabled, messageModel.messageType == .text, ALKLinkPreview.extractURL(from: messageModel.message) != nil else {
+            guard !configuration.isLinkPreviewDisabled, messageModel.messageType == .text, ALKLinkPreviewManager.extractURL(from: messageModel.message) != nil else {
                 if messageModel.isMyMessage {
                     let height = ALKMyMessageCell.rowHeigh(viewModel: messageModel, width: maxWidth, displayNames: { userIds in
                         self.displayNames(ofUserIds: userIds)

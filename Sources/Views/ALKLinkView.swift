@@ -2,13 +2,6 @@ import Foundation
 import Kingfisher
 
 class ALKLinkView: UIView {
-    var localizedStringFileName: String!
-
-    public func setLocalizedStringFileName(_ localizedStringFileName: String) {
-        self.localizedStringFileName = localizedStringFileName
-    }
-
-    let loadingIndicator = ALKLoadingIndicator(frame: .zero, color: UIColor.gray)
     enum CommonPadding {
         enum PreviewImageView {
             static let top: CGFloat = 5
@@ -31,6 +24,14 @@ class ALKLinkView: UIView {
             static let trailing: CGFloat = 5
         }
     }
+
+    var localizedStringFileName: String!
+
+    func setLocalizedStringFileName(_ localizedStringFileName: String) {
+        self.localizedStringFileName = localizedStringFileName
+    }
+
+    let loadingIndicator = ALKLoadingIndicator(frame: .zero, color: UIColor.gray)
 
     var titleLabel: UILabel = {
         let label = UILabel(frame: CGRect.zero)
@@ -112,12 +113,12 @@ class ALKLinkView: UIView {
             hideViews(false)
             return
         }
-        guard let cachelinkViewModel = LinkURLCache.getLink(for: linkUrl) else {
-            let linkview = ALKLinkPreview()
+        guard let cachelinkPreviewMeta = LinkURLCache.getLink(for: linkUrl) else {
+            let linkview = ALKLinkPreviewManager()
             linkview.makePreview(from: linkUrl) { result in
                 switch result {
-                case let .success(linkViewModel):
-                    self.update(linkViewModel: linkViewModel)
+                case let .success(linkPreviewMeta):
+                    self.update(linkPreviewMeta: linkPreviewMeta)
                 case .failure:
                     print("Error while fetching the url data")
                     self.loadingIndicator.stopLoading()
@@ -125,7 +126,7 @@ class ALKLinkView: UIView {
             }
             return
         }
-        update(linkViewModel: cachelinkViewModel)
+        update(linkPreviewMeta: cachelinkPreviewMeta)
     }
 
     func hideViews(_ isHide: Bool) {
@@ -134,18 +135,18 @@ class ALKLinkView: UIView {
         descriptionLabel.isHidden = isHide
     }
 
-    func update(linkViewModel: LinkPreviewMeta) {
+    func update(linkPreviewMeta: LinkPreviewMeta) {
         let placeHolder = UIImage(named: "default_image", in: Bundle.applozic, compatibleWith: nil)
 
-        if let stringURL = linkViewModel.image ?? linkViewModel.icon, let url = URL(string: stringURL) {
+        if let stringURL = linkPreviewMeta.image ?? linkPreviewMeta.icon, let url = URL(string: stringURL) {
             let resource = ImageResource(downloadURL: url, cacheKey: url.absoluteString)
             previewImageView.kf.setImage(with: resource, placeholder: placeHolder)
         } else {
             previewImageView.image = placeHolder
         }
 
-        titleLabel.text = linkViewModel.title
-        descriptionLabel.text = linkViewModel.description ?? linkViewModel.getBaseURl(url: linkViewModel.url?.absoluteString ?? "")
+        titleLabel.text = linkPreviewMeta.title
+        descriptionLabel.text = linkPreviewMeta.description ?? linkPreviewMeta.getBaseURl(url: linkPreviewMeta.url.absoluteString)
         hideViews(false)
         loadingIndicator.stopLoading()
     }

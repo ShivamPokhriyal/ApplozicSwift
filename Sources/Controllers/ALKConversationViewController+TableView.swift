@@ -73,7 +73,8 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
         }
         switch message.messageType {
         case .text, .html, .email:
-            guard !configuration.isLinkPreviewDisabled, message.messageType == .text, let url = ALKLinkPreview.extractURL(from: message.message) else {
+
+            guard !configuration.isLinkPreviewDisabled, message.messageType == .text, let url = ALKLinkPreviewManager.extractURL(from: message.message) else {
                 if message.isMyMessage {
                     let cell: ALKMyMessageCell = tableView.dequeueReusableCell(forIndexPath: indexPath)
                     cell.showReport = false
