@@ -1,6 +1,6 @@
 import Foundation
 
-class Regex {
+class LinkPreviewRegex {
     enum Pattern {
         enum Image {
             static let type = "(.+?)\\.(gif|jpg|jpeg|png|bmp)$"
@@ -40,7 +40,7 @@ class Regex {
 
     // Check the regular expression
     static func isMatchFound(_ string: String, regex: String) -> Bool {
-        return Regex.pregMatchFirst(string, pattern: regex) != nil
+        return LinkPreviewRegex.pregMatchFirst(string, pattern: regex) != nil
     }
 
     // Match first occurrency
@@ -51,7 +51,7 @@ class Regex {
             guard let match = regex.firstMatch(in: string, options: [], range: range) else {
                 return nil
             }
-            let result: [String] = Regex.stringMatches([match], text: string, index: index)
+            let result: [String] = LinkPreviewRegex.stringMatches([match], text: string, index: index)
             return result.isEmpty ? nil : result[0]
         } catch {
             return nil
@@ -64,7 +64,7 @@ class Regex {
             let regex = try NSRegularExpression(pattern: pattern, options: [.caseInsensitive])
             let range = NSRange(string.startIndex ..< string.endIndex, in: string)
             let matches = regex.matches(in: string, options: [], range: range)
-            return !matches.isEmpty ? Regex.stringMatches(matches, text: string, index: index) : []
+            return !matches.isEmpty ? LinkPreviewRegex.stringMatches(matches, text: string, index: index) : []
         } catch {
             return []
         }
