@@ -74,23 +74,6 @@ open class ALKMyMessageCell: ALKMessageCell {
         }
     }
 
-    struct ConstraintIdentifier {
-        struct ReplyNameLabel {
-            static let height = "ReplyNameHeight"
-        }
-
-        struct ReplyMessageLabel {
-            static let height = "ReplyMessageHeight"
-        }
-
-        struct PreviewImage {
-            static let height = "ReplyPreviewImageHeight"
-            static let width = "ReplyPreviewImageWidth"
-        }
-
-        static let replyViewHeightIdentifier = "ReplyViewHeight"
-    }
-
     override func setupViews() {
         super.setupViews()
 

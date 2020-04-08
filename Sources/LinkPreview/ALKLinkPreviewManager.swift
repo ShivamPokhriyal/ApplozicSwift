@@ -130,6 +130,7 @@ class ALKLinkPreviewManager: NSObject, URLSessionDelegate {
 
     private func parseIcon(in text: String, baseUrl: String) -> String? {
         let links = Regex.pregMatchAll(text, pattern: Regex.Pattern.Link.tag, index: 1)
+        // swiftlint:disable:next opening_brace
         let filters = [{ (link: String) -> Bool
                 in link.range(of: "apple-touch") != nil
         }, { (link: String) -> Bool

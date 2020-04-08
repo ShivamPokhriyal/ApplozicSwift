@@ -6,21 +6,21 @@ class ALKLinkView: UIView {
         enum PreviewImageView {
             static let top: CGFloat = 5
             static let leading: CGFloat = 5
-            static let height: CGFloat = 60
+            static let height: CGFloat = 80
             static let width: CGFloat = 60
         }
 
         enum TitleLabel {
             static let top: CGFloat = 5
             static let leading: CGFloat = 5
-            static let height: CGFloat = 30
+            static let height: CGFloat = 35
             static let trailing: CGFloat = 5
         }
 
         enum DescriptionLabel {
             static let top: CGFloat = 5
             static let leading: CGFloat = 5
-            static let height: CGFloat = 30
+            static let height: CGFloat = 35
             static let trailing: CGFloat = 5
         }
     }
@@ -73,6 +73,7 @@ class ALKLinkView: UIView {
 
     func setupConstraintAndView() {
         addViewsForAutolayout(views: [titleLabel, descriptionLabel, previewImageView, loadingIndicator, frontView])
+        isUserInteractionEnabled = true
         layer.borderWidth = 0.5
         layer.borderColor = UIColor.lightGray.cgColor
         clipsToBounds = true
@@ -118,7 +119,7 @@ class ALKLinkView: UIView {
             linkview.makePreview(from: linkUrl) { result in
                 switch result {
                 case let .success(linkPreviewMeta):
-                    self.update(linkPreviewMeta: linkPreviewMeta)
+                    self.updateView(linkPreviewMeta: linkPreviewMeta)
                 case .failure:
                     print("Error while fetching the url data")
                     self.loadingIndicator.stopLoading()
@@ -126,7 +127,7 @@ class ALKLinkView: UIView {
             }
             return
         }
-        update(linkPreviewMeta: cachelinkPreviewMeta)
+        updateView(linkPreviewMeta: cachelinkPreviewMeta)
     }
 
     func hideViews(_ isHide: Bool) {
@@ -135,7 +136,11 @@ class ALKLinkView: UIView {
         descriptionLabel.isHidden = isHide
     }
 
-    func update(linkPreviewMeta: LinkPreviewMeta) {
+    class func height() -> CGFloat {
+        return ALKLinkView.CommonPadding.PreviewImageView.height + ALKLinkView.CommonPadding.PreviewImageView.top
+    }
+
+    func updateView(linkPreviewMeta: LinkPreviewMeta) {
         let placeHolder = UIImage(named: "default_image", in: Bundle.applozic, compatibleWith: nil)
 
         if let stringURL = linkPreviewMeta.image ?? linkPreviewMeta.icon, let url = URL(string: stringURL) {

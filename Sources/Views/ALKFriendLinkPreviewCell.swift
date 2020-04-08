@@ -1,3 +1,4 @@
+import Applozic
 import Foundation
 import Kingfisher
 
@@ -39,6 +40,31 @@ class ALKFriendLinkPreviewCell: ALKLinkPreviewBaseCell {
             static let left: CGFloat = 5.0
             static let right: CGFloat = 95.0
             static let bottom: CGFloat = 5.0
+        }
+
+        struct ReplyView {
+            static let left: CGFloat = 5.0
+            static let right: CGFloat = 5.0
+            static let top: CGFloat = 5.0
+            static let height: CGFloat = 80.0
+        }
+
+        struct ReplyNameLabel {
+            static let right: CGFloat = 10.0
+            static let height: CGFloat = 30.0
+        }
+
+        struct ReplyMessageLabel {
+            static let right: CGFloat = 10.0
+            static let top: CGFloat = 5.0
+            static let height: CGFloat = 30.0
+        }
+
+        struct PreviewImageView {
+            static let height: CGFloat = 50.0
+            static let width: CGFloat = 70.0
+            static let right: CGFloat = 5.0
+            static let top: CGFloat = 10.0
         }
 
         enum MessageView {
@@ -114,8 +140,78 @@ class ALKFriendLinkPreviewCell: ALKLinkPreviewBaseCell {
                 lessThanOrEqualTo: contentView.trailingAnchor,
                 constant: -Padding.BubbleView.right
             ),
-            linkView.topAnchor.constraint(
+            emailTopView.topAnchor.constraint(
                 equalTo: bubbleView.topAnchor,
+                constant: Padding.MessageView.top
+            ),
+            emailTopView.trailingAnchor.constraint(
+                equalTo: bubbleView.trailingAnchor,
+                constant: -ALKMessageStyle.receivedBubble.widthPadding
+            ),
+            emailTopView.leadingAnchor.constraint(
+                equalTo: bubbleView.leadingAnchor,
+                constant: ALKFriendMessageCell.bubbleViewLeftPadding
+            ),
+            emailTopHeight,
+            replyView.topAnchor.constraint(
+                equalTo: emailTopView.bottomAnchor,
+                constant: Padding.ReplyView.top
+            ),
+            replyView.heightAnchor.constraintEqualToAnchor(
+                constant: 0,
+                identifier: ConstraintIdentifier.replyViewHeightIdentifier
+            ),
+            replyView.leadingAnchor.constraint(
+                equalTo: bubbleView.leadingAnchor,
+                constant: Padding.ReplyView.left
+            ),
+            replyView.trailingAnchor.constraint(
+                equalTo: bubbleView.trailingAnchor,
+                constant: -Padding.ReplyView.right
+            ),
+
+            previewImageView.topAnchor.constraint(
+                equalTo: replyView.topAnchor,
+                constant: Padding.PreviewImageView.top
+            ),
+            previewImageView.trailingAnchor.constraint(
+                lessThanOrEqualTo: replyView.trailingAnchor,
+                constant: -Padding.PreviewImageView.right
+            ),
+            previewImageView.heightAnchor.constraintEqualToAnchor(
+                constant: 0,
+                identifier: ConstraintIdentifier.PreviewImage.height
+            ),
+            previewImageView.widthAnchor.constraintEqualToAnchor(
+                constant: 0,
+                identifier: ConstraintIdentifier.PreviewImage.width
+            ),
+
+            replyNameLabel.leadingAnchor.constraint(equalTo: replyView.leadingAnchor),
+            replyNameLabel.topAnchor.constraint(equalTo: replyView.topAnchor),
+            replyNameLabel.trailingAnchor.constraint(
+                lessThanOrEqualTo: previewImageView.leadingAnchor,
+                constant: -Padding.ReplyNameLabel.right
+            ),
+            replyNameLabel.heightAnchor.constraintEqualToAnchor(
+                constant: 0,
+                identifier: ConstraintIdentifier.ReplyNameLabel.height
+            ),
+            replyMessageLabel.leadingAnchor.constraint(equalTo: replyView.leadingAnchor),
+            replyMessageLabel.topAnchor.constraint(
+                equalTo: replyNameLabel.bottomAnchor,
+                constant: Padding.ReplyMessageLabel.top
+            ),
+            replyMessageLabel.trailingAnchor.constraint(
+                lessThanOrEqualTo: previewImageView.leadingAnchor,
+                constant: -Padding.ReplyMessageLabel.right
+            ),
+            replyMessageLabel.heightAnchor.constraintEqualToAnchor(
+                constant: 0,
+                identifier: ConstraintIdentifier.ReplyMessageLabel.height
+            ),
+            linkView.topAnchor.constraint(
+                equalTo: replyView.bottomAnchor,
                 constant: Padding.LinkView.top
             ),
             linkView.leadingAnchor.constraint(
@@ -141,7 +237,17 @@ class ALKFriendLinkPreviewCell: ALKLinkPreviewBaseCell {
                 equalTo: bubbleView.leadingAnchor,
                 constant: ALKFriendMessageCell.bubbleViewLeftPadding
             ),
-
+            emailBottomView.bottomAnchor.constraint(
+                equalTo: contentView.bottomAnchor
+            ),
+            emailBottomViewHeight,
+            emailBottomView.trailingAnchor.constraint(
+                lessThanOrEqualTo: contentView.trailingAnchor
+            ),
+            emailBottomView.leadingAnchor.constraint(
+                equalTo: bubbleView.leadingAnchor,
+                constant: ALKFriendMessageCell.bubbleViewLeftPadding
+            ),
             timeLabel.leadingAnchor.constraint(
                 equalTo: bubbleView.trailingAnchor,
                 constant: Padding.TimeLabel.left
@@ -167,6 +273,21 @@ class ALKFriendLinkPreviewCell: ALKLinkPreviewBaseCell {
             messageStyle: ALKMessageStyle.receivedMessage,
             mentionStyle: ALKMessageStyle.receivedMention
         )
+        if viewModel.isReplyMessage {
+            guard
+                let metadata = viewModel.metadata,
+                let replyId = metadata[AL_MESSAGE_REPLY_KEY] as? String,
+                let actualMessage = getMessageFor(key: replyId)
+            else { return }
+            showReplyView(true)
+            if actualMessage.messageType == .text || actualMessage.messageType == .html {
+                previewImageView.constraint(withIdentifier: ConstraintIdentifier.PreviewImage.height)?.constant = 0
+            } else {
+                previewImageView.constraint(withIdentifier: ConstraintIdentifier.PreviewImage.width)?.constant = Padding.PreviewImageView.width
+            }
+        } else {
+            showReplyView(false)
+        }
 
         let placeHolder = UIImage(named: "placeholder", in: Bundle.applozic, compatibleWith: nil)
         if let url = viewModel.avatarURL {
@@ -201,15 +322,54 @@ class ALKFriendLinkPreviewCell: ALKLinkPreviewBaseCell {
                 mentionStyle: ALKMessageStyle.receivedMention,
                 displayNames: displayNames
             )
-        let heightPadding = Padding.NameLabel.top + Padding.NameLabel.height + Padding.LinkView.top + Padding.MessageView.top + Padding.MessageView.bottom + Padding.BubbleView.bottom
+        let heightPadding = Padding.NameLabel.top + Padding.NameLabel.height + Padding.ReplyView.top + Padding.MessageView.top + Padding.MessageView.bottom + Padding.BubbleView.bottom
 
         let totalHeight = max(messageHeight + heightPadding, minimumHeight)
 
-        return totalHeight + ALKLinkView.CommonPadding.PreviewImageView.height + ALKLinkView.CommonPadding.TitleLabel.top
+        let linkURL = ALKLinkPreviewManager.extractURL(from: viewModel.message)
+
+        var isReplyMessage = false
+        if let metadata = viewModel.metadata,
+            metadata[AL_MESSAGE_REPLY_KEY] as? String != nil {
+            isReplyMessage = true
+        }
+
+        if isReplyMessage, linkURL != nil {
+            let linkViewHeight = ALKLinkView.height() + Padding.LinkView.top
+            return totalHeight + Padding.ReplyView.height + linkViewHeight
+        } else if isReplyMessage {
+            return messageHeight + Padding.ReplyView.height
+        } else if linkURL != nil {
+            return totalHeight + ALKLinkView.height() + Padding.LinkView.top
+        }
+        return totalHeight
     }
 
     @objc private func avatarTappedAction() {
         avatarTapped?()
+    }
+
+    private func showReplyView(_ show: Bool) {
+        replyView
+            .constraint(withIdentifier: ConstraintIdentifier.replyViewHeightIdentifier)?
+            .constant = show ? Padding.ReplyView.height : 0
+        replyNameLabel
+            .constraint(withIdentifier: ConstraintIdentifier.ReplyNameLabel.height)?
+            .constant = show ? Padding.ReplyNameLabel.height : 0
+        replyMessageLabel
+            .constraint(withIdentifier: ConstraintIdentifier.ReplyMessageLabel.height)?
+            .constant = show ? Padding.ReplyMessageLabel.height : 0
+        previewImageView
+            .constraint(withIdentifier: ConstraintIdentifier.PreviewImage.height)?
+            .constant = show ? Padding.PreviewImageView.height : 0
+        previewImageView
+            .constraint(withIdentifier: ConstraintIdentifier.PreviewImage.width)?
+            .constant = show ? Padding.PreviewImageView.width : 0
+
+        replyView.isHidden = !show
+        replyNameLabel.isHidden = !show
+        replyMessageLabel.isHidden = !show
+        previewImageView.isHidden = !show
     }
 
     // MARK: - ChatMenuCell
