@@ -6,6 +6,7 @@ class ALKLinkPreviewManager: NSObject, URLSessionDelegate {
         static let decription: Int = 100
     }
 
+    private static let urlCache = NSCache<NSString, AnyObject>()
     private let workBckQueue: DispatchQueue
     private let responseMainQueue: DispatchQueue
 
@@ -15,8 +16,8 @@ class ALKLinkPreviewManager: NSObject, URLSessionDelegate {
         self.responseMainQueue = responseMainQueue
     }
 
-    func makePreview(from text: String, _ completion: @escaping (Result<LinkPreviewMeta, LinkPreviewFailure>) -> Void) {
-        guard let url = ALKLinkPreviewManager.extractURL(from: text) else {
+    func makePreview(from text: String, identifier: String, _ completion: @escaping (Result<LinkPreviewMeta, LinkPreviewFailure>) -> Void) {
+        guard let url = ALKLinkPreviewManager.extractURLAndAddInCache(from: text, identifier: identifier) else {
             responseMainQueue.async {
                 completion(.failure(.noURLFound))
             }
@@ -205,23 +206,29 @@ class ALKLinkPreviewManager: NSObject, URLSessionDelegate {
 
     /// Returns the very first url encountered in the text.
     /// - Parameter text: text from which url is to be search
-    class func extractURL(from text: String?) -> URL? {
+    /// - Parameter identifier: Message identifier for cache
+    class func extractURLAndAddInCache(from text: String?, identifier: String) -> URL? {
         guard let message = text else {
             return nil
         }
-        do {
-            let detector = try NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
-            let range = NSRange(location: 0, length: message.utf16.count)
-            let matches = detector.matches(in: message, options: [], range: range)
-            let url =  matches.compactMap { $0.url }.first
 
-            guard let urlString = url?.absoluteString, !urlString.starts(with: "mailto:") else {
+        guard let urlString = urlCache.object(forKey: identifier as NSString), let url = URL(string: urlString as! String) else {
+            do {
+                let detector = try NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
+                let range = NSRange(location: 0, length: message.utf16.count)
+                let matches = detector.matches(in: message, options: [], range: range)
+                let url = matches.compactMap { $0.url }.first
+
+                guard let urlString = url?.absoluteString, !urlString.starts(with: "mailto:") else {
+                    return nil
+                }
+                urlCache.setObject(urlString as NSString, forKey: identifier as NSString)
+                return url
+            } catch {
                 return nil
             }
-            return url
-        } catch {
-            return nil
         }
+        return url
     }
 
     private func getTagData(_ content: String, minimum: Int) -> String {

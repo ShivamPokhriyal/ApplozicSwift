@@ -1,7 +1,7 @@
 import Foundation
 import Kingfisher
 
-class ALKLinkView: UIView {
+class ALKLinkView: UIView, Localizable {
     enum CommonPadding {
         enum PreviewImageView {
             static let top: CGFloat = 5
@@ -106,7 +106,7 @@ class ALKLinkView: UIView {
         loadingIndicator.leadingAnchor.constraint(equalTo: previewImageView.leadingAnchor).isActive = true
     }
 
-    func update(url: String?) {
+    func update(url: String?, identifier: String) {
         loadingIndicator.startLoading(localizationFileName: localizedStringFileName)
         hideViews(true)
         guard let linkUrl = url else {
@@ -116,12 +116,12 @@ class ALKLinkView: UIView {
         }
         guard let cachelinkPreviewMeta = LinkURLCache.getLink(for: linkUrl) else {
             let linkview = ALKLinkPreviewManager()
-            linkview.makePreview(from: linkUrl) { result in
+            linkview.makePreview(from: linkUrl, identifier: identifier) { result in
                 switch result {
                 case let .success(linkPreviewMeta):
                     self.updateView(linkPreviewMeta: linkPreviewMeta)
                 case .failure:
-                    print("Error while fetching the url data")
+                    self.updateFailedStatusInView()
                     self.loadingIndicator.stopLoading()
                 }
             }
@@ -154,5 +154,10 @@ class ALKLinkView: UIView {
         descriptionLabel.text = linkPreviewMeta.description ?? linkPreviewMeta.getBaseURl(url: linkPreviewMeta.url.absoluteString)
         hideViews(false)
         loadingIndicator.stopLoading()
+    }
+
+    func updateFailedStatusInView() {
+        hideViews(false)
+        titleLabel.text = localizedString(forKey: "FailedToLoadLink", withDefaultValue: SystemMessage.Information.FailedToLoadLink, fileName: localizedStringFileName)
     }
 }

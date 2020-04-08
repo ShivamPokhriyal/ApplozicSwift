@@ -299,7 +299,7 @@ class ALKFriendLinkPreviewCell: ALKLinkPreviewBaseCell {
 
         nameLabel.text = viewModel.displayName
 
-        linkView.update(url: url)
+        linkView.update(url: url, identifier: viewModel.identifier)
     }
 
     class func rowHeigh(
@@ -326,7 +326,7 @@ class ALKFriendLinkPreviewCell: ALKLinkPreviewBaseCell {
 
         let totalHeight = max(messageHeight + heightPadding, minimumHeight)
 
-        let linkURL = ALKLinkPreviewManager.extractURL(from: viewModel.message)
+        let linkURL = ALKLinkPreviewManager.extractURLAndAddInCache(from: viewModel.message, identifier: viewModel.identifier)
 
         var isReplyMessage = false
         if let metadata = viewModel.metadata,
