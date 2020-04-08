@@ -45,6 +45,9 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                     cell.menuAction = { [weak self] action in
                         self?.menuItemSelected(action: action, message: message)
                     }
+                    cell.replyViewAction = { [weak self] in
+                        self?.scrollTo(message: message)
+                    }
                     return cell
 
                 } else {
@@ -60,6 +63,9 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                     cell.avatarTapped = { [weak self] in
                         guard let currentModel = cell.viewModel else { return }
                         self?.messageAvatarViewDidTap(messageVM: currentModel, indexPath: indexPath)
+                    }
+                    cell.replyViewAction = { [weak self] in
+                        self?.scrollTo(message: message)
                     }
                     cell.menuAction = { [weak self] action in
                         self?.menuItemSelected(action: action, message: message)
@@ -82,6 +88,9 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                 cell.menuAction = { [weak self] action in
                     self?.menuItemSelected(action: action, message: message)
                 }
+                cell.replyViewAction = { [weak self] in
+                    self?.scrollTo(message: message)
+                }
                 return cell
 
             } else {
@@ -101,6 +110,9 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
                 }
                 cell.menuAction = { [weak self] action in
                     self?.menuItemSelected(action: action, message: message)
+                }
+                cell.replyViewAction = { [weak self] in
+                    self?.scrollTo(message: message)
                 }
                 return cell
             }
