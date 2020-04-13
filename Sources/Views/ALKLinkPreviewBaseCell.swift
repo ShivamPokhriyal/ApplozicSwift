@@ -35,10 +35,7 @@ class ALKLinkPreviewBaseCell: ALKMessageCell {
     }
 
     @objc private func openUrl() {
-        let pushAssistant = ALPushAssist()
-        guard let topVC = pushAssistant.topViewController,
-            let stringURL = url, let openURL = URL(string: stringURL) else { return }
-        let vc = ALKWebViewController(htmlString: nil, url: openURL, title: "")
-        topVC.navigationController?.pushViewController(vc, animated: true)
+        guard let stringURL = url, let openURL = URL(string: stringURL) else { return }
+        UIApplication.shared.open(openURL)
     }
 }
