@@ -3,24 +3,26 @@ import Kingfisher
 
 class ALKLinkView: UIView, Localizable {
     enum CommonPadding {
+        enum View {
+            static let height: CGFloat = 100
+        }
+
         enum PreviewImageView {
             static let top: CGFloat = 5
             static let leading: CGFloat = 5
-            static let height: CGFloat = 80
+            static let bottom: CGFloat = 5
             static let width: CGFloat = 60
         }
 
         enum TitleLabel {
             static let top: CGFloat = 5
             static let leading: CGFloat = 5
-            static let height: CGFloat = 35
             static let trailing: CGFloat = 5
         }
 
         enum DescriptionLabel {
-            static let top: CGFloat = 5
+            static let top: CGFloat = 2
             static let leading: CGFloat = 5
-            static let height: CGFloat = 35
             static let trailing: CGFloat = 5
         }
     }
@@ -35,7 +37,8 @@ class ALKLinkView: UIView, Localizable {
 
     var titleLabel: UILabel = {
         let label = UILabel(frame: CGRect.zero)
-        label.font = UIFont.font(.bold(size: 14))
+        label.textColor = UIColor(red: 20, green: 19, blue: 19)
+        label.font = UIFont.font(.medium(size: 18))
         label.numberOfLines = 2
         return label
     }()
@@ -49,9 +52,9 @@ class ALKLinkView: UIView, Localizable {
 
     var descriptionLabel: UILabel = {
         let label = UILabel(frame: CGRect.zero)
-        label.numberOfLines = 2
-        label.textColor = UIColor.lightGray
-        label.font = UIFont.font(.normal(size: 12))
+        label.numberOfLines = 3
+        label.textColor = UIColor(red: 121, green: 116, blue: 116)
+        label.font = UIFont.font(.light(size: 14))
         return label
     }()
 
@@ -87,23 +90,23 @@ class ALKLinkView: UIView, Localizable {
         previewImageView.topAnchor.constraint(equalTo: topAnchor, constant: CommonPadding.PreviewImageView.top).isActive = true
         previewImageView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: CommonPadding.PreviewImageView.leading).isActive = true
         previewImageView.widthAnchor.constraint(equalToConstant: CommonPadding.PreviewImageView.width).isActive = true
-        previewImageView.heightAnchor.constraint(equalToConstant: CommonPadding.PreviewImageView.height).isActive = true
+        previewImageView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -CommonPadding.PreviewImageView.bottom).isActive = true
 
         titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: CommonPadding.TitleLabel.top).isActive = true
         titleLabel.leadingAnchor.constraint(equalTo: previewImageView.trailingAnchor, constant: CommonPadding.TitleLabel.leading).isActive = true
-        titleLabel.heightAnchor.constraint(equalToConstant: CommonPadding.TitleLabel.height).isActive = true
         titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -CommonPadding.TitleLabel.trailing).isActive = true
 
         descriptionLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: CommonPadding.DescriptionLabel.top).isActive = true
         descriptionLabel.leadingAnchor.constraint(equalTo: previewImageView.trailingAnchor, constant: CommonPadding.DescriptionLabel.leading).isActive = true
-        descriptionLabel.heightAnchor.constraint(equalToConstant: CommonPadding.DescriptionLabel.height).isActive = true
         descriptionLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant:
             -CommonPadding.DescriptionLabel.trailing).isActive = true
 
+        descriptionLabel.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor).isActive = true
+
         loadingIndicator.trailingAnchor.constraint(equalTo: trailingAnchor).isActive = true
         loadingIndicator.topAnchor.constraint(equalTo: topAnchor).isActive = true
-        loadingIndicator.bottomAnchor.constraint(equalTo: descriptionLabel.bottomAnchor).isActive = true
         loadingIndicator.leadingAnchor.constraint(equalTo: previewImageView.leadingAnchor).isActive = true
+        loadingIndicator.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
     }
 
     func update(url: String?, identifier: String) {
@@ -137,7 +140,7 @@ class ALKLinkView: UIView, Localizable {
     }
 
     class func height() -> CGFloat {
-        return ALKLinkView.CommonPadding.PreviewImageView.height + ALKLinkView.CommonPadding.PreviewImageView.top
+        return ALKLinkView.CommonPadding.View.height + ALKLinkView.CommonPadding.PreviewImageView.top
     }
 
     func updateView(linkPreviewMeta: LinkPreviewMeta) {

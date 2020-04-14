@@ -12,6 +12,7 @@ class ALKLinkPreviewBaseCell: ALKMessageCell {
     ) {
         super.update(viewModel: viewModel, messageStyle: messageStyle, mentionStyle: mentionStyle)
         linkView.setLocalizedStringFileName(localizedStringFileName)
+        url = ALKLinkPreviewManager.extractURLAndAddInCache(from: viewModel.message, identifier: viewModel.identifier)?.absoluteString
     }
 
     override func setupViews() {

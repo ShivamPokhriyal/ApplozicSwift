@@ -73,6 +73,7 @@ class ALKFriendLinkPreviewCell: ALKLinkPreviewBaseCell {
         }
 
         enum LinkView {
+            static let height: CGFloat = 100.0
             static let top: CGFloat = 5.0
             static let left: CGFloat = 10.0
             static let right: CGFloat = 8.0
@@ -222,6 +223,7 @@ class ALKFriendLinkPreviewCell: ALKLinkPreviewBaseCell {
                 equalTo: bubbleView.trailingAnchor,
                 constant: -Padding.LinkView.right
             ),
+            linkView.heightAnchor.constraint(equalToConstant: Padding.LinkView.height),
             messageView.topAnchor.constraint(
                 equalTo: linkView.bottomAnchor
             ),
