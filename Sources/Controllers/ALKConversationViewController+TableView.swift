@@ -331,13 +331,40 @@ extension ALKConversationViewController: UITableViewDelegate, UITableViewDataSou
             }
         case .quickReply:
             if message.isMyMessage {
-                let cell: ALKMyQuickReplyCell = tableView.dequeueReusableCell(forIndexPath: indexPath)
+                guard let messageString = message.message, !messageString.trim().isEmpty else {
+                    let cell: ALKMyQuickReplyCell = tableView.dequeueReusableCell(forIndexPath: indexPath)
+                    cell.setLocalizedStringFileName(configuration.localizedStringFileName)
+                    cell.update(viewModel: message, maxWidth: UIScreen.main.bounds.width)
+                    cell.update(chatBar: chatBar)
+                    return cell
+                }
+                let cell: ALKMyQuickReplyMessageCell = tableView.dequeueReusableCell(forIndexPath: indexPath)
                 cell.setLocalizedStringFileName(configuration.localizedStringFileName)
                 cell.update(viewModel: message, maxWidth: UIScreen.main.bounds.width)
                 cell.update(chatBar: chatBar)
                 return cell
             } else {
-                let cell: ALKFriendQuickReplyCell = tableView.dequeueReusableCell(forIndexPath: indexPath)
+                guard let messageString = message.message, !messageString.trim().isEmpty else {
+                    let cell: ALKFriendQuickReplyCell = tableView.dequeueReusableCell(forIndexPath: indexPath)
+                    cell.setLocalizedStringFileName(configuration.localizedStringFileName)
+                    cell.update(viewModel: message, maxWidth: UIScreen.main.bounds.width)
+                    cell.update(chatBar: chatBar)
+                    guard let template = message.payloadFromMetadata() else {
+                        return cell
+                    }
+                    cell.quickReplySelected = { [weak self] index, title in
+                        guard let weakSelf = self else { return }
+                        weakSelf.quickReplySelected(
+                            index: index,
+                            title: title,
+                            template: template,
+                            message: message,
+                            isButtonClickDisabled: weakSelf.configuration.disableRichMessageButtonAction
+                        )
+                    }
+                    return cell
+                }
+                let cell: ALKFriendQuickReplyMessageCell = tableView.dequeueReusableCell(forIndexPath: indexPath)
                 cell.setLocalizedStringFileName(configuration.localizedStringFileName)
                 cell.update(viewModel: message, maxWidth: UIScreen.main.bounds.width)
                 cell.update(chatBar: chatBar)

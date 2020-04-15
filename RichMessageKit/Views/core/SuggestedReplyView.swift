@@ -100,7 +100,7 @@ public class SuggestedReplyView: UIView {
         addViewsForAutolayout(views: [mainStackView])
         NSLayoutConstraint.activate([
             mainStackView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            mainStackView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            mainStackView.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor),
             mainStackView.topAnchor.constraint(equalTo: topAnchor),
             mainStackView.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])

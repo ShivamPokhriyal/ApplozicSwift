@@ -335,13 +335,26 @@ open class ALKConversationViewModel: NSObject, Localizable {
             }
         case .quickReply:
             if messageModel.isMyMessage {
+                guard let message = messageModel.message, !message.trim().isEmpty else {
+                    return
+                        ALKMyQuickReplyCell
+                            .rowHeight(viewModel: messageModel, maxWidth: UIScreen.main.bounds.width)
+                            .cached(with: cacheIdentifier)
+                }
                 return
-                    ALKMyQuickReplyCell
+                    ALKMyQuickReplyMessageCell
                         .rowHeight(viewModel: messageModel, maxWidth: UIScreen.main.bounds.width)
                         .cached(with: cacheIdentifier)
             } else {
+                guard let message = messageModel.message, !message.trim().isEmpty else {
+                    return
+                        ALKFriendQuickReplyCell
+                            .rowHeight(viewModel: messageModel, maxWidth: UIScreen.main.bounds.width)
+                            .cached(with: cacheIdentifier)
+                }
+
                 return
-                    ALKFriendQuickReplyCell
+                    ALKFriendQuickReplyMessageCell
                         .rowHeight(viewModel: messageModel, maxWidth: UIScreen.main.bounds.width)
                         .cached(with: cacheIdentifier)
             }
