@@ -73,7 +73,7 @@ class ALKFriendLinkPreviewCell: ALKLinkPreviewBaseCell {
         }
 
         enum LinkView {
-            static let height: CGFloat = 100.0
+            static let height: CGFloat = 90.0
             static let top: CGFloat = 5.0
             static let left: CGFloat = 10.0
             static let right: CGFloat = 8.0

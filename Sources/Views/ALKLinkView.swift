@@ -4,14 +4,14 @@ import Kingfisher
 class ALKLinkView: UIView, Localizable {
     enum CommonPadding {
         enum View {
-            static let height: CGFloat = 100
+            static let height: CGFloat = 90
         }
 
         enum PreviewImageView {
             static let top: CGFloat = 5
             static let leading: CGFloat = 5
             static let bottom: CGFloat = 5
-            static let width: CGFloat = 60
+            static let width: CGFloat = 80
         }
 
         enum TitleLabel {
