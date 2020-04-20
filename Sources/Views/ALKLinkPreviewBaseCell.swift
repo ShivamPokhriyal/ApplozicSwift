@@ -3,7 +3,7 @@ import Foundation
 
 class ALKLinkPreviewBaseCell: ALKMessageCell {
     var url: String?
-    let linkView = ALKLinkView()
+    public let linkView = ALKLinkView()
 
     override func update(
         viewModel: ALKMessageViewModel,

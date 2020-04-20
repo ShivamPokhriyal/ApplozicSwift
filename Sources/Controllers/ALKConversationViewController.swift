@@ -27,6 +27,13 @@ open class ALKConversationViewController: ALKBaseViewController, Localizable {
             }
         }
     }
+    
+    func isCellVisible(identifier: String) -> Bool {
+        guard let index = self.viewModel.sectionFor(identifier: identifier) else { return false }
+        let cell = self.tableView.cellForRow(at: IndexPath(row: 0, section: index)) as? ALKChatBaseCell<ALKMessageViewModel>
+        print("SHIVAMMM See the result :: \(cell != nil)")
+        return cell != nil
+    }
 
     /// Make this false if you want to use custom list view controller
     public var individualLaunch = true
